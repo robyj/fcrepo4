@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class SessionFactory {
 
+
     private static final Logger logger = getLogger(SessionFactory.class);
 
     @Autowired
