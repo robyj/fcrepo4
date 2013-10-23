@@ -17,8 +17,10 @@
 package org.fcrepo.http.api;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM_TYPE;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.CREATED;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+import static javax.ws.rs.core.Response.Status.fromStatusCode;
 import static org.fcrepo.http.commons.test.util.PathSegmentImpl.createPathList;
 import static org.fcrepo.http.commons.test.util.TestHelpers.getUriInfoImpl;
 import static org.fcrepo.http.commons.test.util.TestHelpers.mockSession;
@@ -50,6 +52,7 @@ import java.util.Calendar;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.ValueFactory;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
@@ -329,4 +332,50 @@ public class FedoraNodesTest {
         verify(mockObject).replacePropertiesDataset(any(GraphSubjects.class), any(Model.class));
     }
 
+    @Test
+    public void testCopyObject() throws RepositoryException {
+
+        final ValueFactory mockVF = mock(ValueFactory.class);
+        when(mockSession.getValueFactory()).thenReturn(mockVF);
+
+        final String pid = "foo";
+
+        testObj.copyObject(createPathList(pid), "http://localhost/fcrepo/bar");
+        verify(mockNodes).copyObject(mockSession, "/foo", "/bar");
+    }
+
+    @Test
+    public void testCopyObjectWithBadDestination() throws RepositoryException {
+        final ValueFactory mockVF = mock(ValueFactory.class);
+        when(mockSession.getValueFactory()).thenReturn(mockVF);
+
+        final String pid = "foo";
+
+        final Response response = testObj.copyObject(createPathList(pid), "http://somewhere/else/baz");
+
+        assertEquals(BAD_REQUEST.getStatusCode(), response.getStatus());
+    }
+
+    @Test
+    public void testMoveObject() throws RepositoryException {
+        final ValueFactory mockVF = mock(ValueFactory.class);
+        when(mockSession.getValueFactory()).thenReturn(mockVF);
+
+        final String pid = "foo";
+
+        testObj.moveObject(createPathList(pid), "http://localhost/fcrepo/bar");
+        verify(mockNodes).moveObject(mockSession, "/foo", "/bar");
+    }
+
+    @Test
+    public void testMoveObjectWithBadDestination() throws RepositoryException {
+        final ValueFactory mockVF = mock(ValueFactory.class);
+        when(mockSession.getValueFactory()).thenReturn(mockVF);
+
+        final String pid = "foo";
+
+        final Response response = testObj.moveObject(createPathList(pid), "http://somewhere/else/baz");
+
+        assertEquals(BAD_REQUEST.getStatusCode(), response.getStatus());
+    }
 }

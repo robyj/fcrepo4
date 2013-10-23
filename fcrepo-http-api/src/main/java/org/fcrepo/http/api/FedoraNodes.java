@@ -78,11 +78,14 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.jena.riot.Lang;
 import org.fcrepo.http.commons.AbstractResource;
 import org.fcrepo.http.commons.api.rdf.HttpGraphSubjects;
+import org.fcrepo.http.commons.domain.MOVE;
 import org.fcrepo.http.commons.domain.PATCH;
+import org.fcrepo.http.commons.domain.COPY;
 import org.fcrepo.http.commons.session.InjectedSession;
 import org.fcrepo.kernel.Datastream;
 import org.fcrepo.kernel.FedoraResource;
@@ -534,4 +537,65 @@ public class FedoraNodes extends AbstractResource {
             session.logout();
         }
     }
+
+    /**
+     * Copies an object from one path to another
+     */
+    @COPY
+    @Timed
+    public Response copyObject(@PathParam("path") final List<PathSegment> path,
+                               @HeaderParam("Destination") final String destinationPath)
+        throws RepositoryException {
+
+        try {
+
+            final HttpGraphSubjects subjects =
+                new HttpGraphSubjects(session, FedoraNodes.class, uriInfo);
+
+            final String destination =
+                subjects.getPathFromGraphSubject(ResourceFactory.createResource(destinationPath));
+
+            if (destination == null) {
+                return status(SC_BAD_REQUEST).entity("Destination was not a valid resource path").build();
+            }
+
+            nodeService.copyObject(session, toPath(path), destination);
+            session.save();
+            return noContent().build();
+        } finally {
+            session.logout();
+        }
+
+    }
+
+    /**
+     * Copies an object from one path to another
+     */
+    @MOVE
+    @Timed
+    public Response moveObject(@PathParam("path") final List<PathSegment> path,
+                               @HeaderParam("Destination") final String destinationPath)
+        throws RepositoryException {
+
+        try {
+
+            final HttpGraphSubjects subjects =
+                new HttpGraphSubjects(session, FedoraNodes.class, uriInfo);
+
+            final String destination =
+                subjects.getPathFromGraphSubject(ResourceFactory.createResource(destinationPath));
+
+            if (destination == null) {
+                return status(SC_BAD_REQUEST).entity("Destination was not a valid resource path").build();
+            }
+
+            nodeService.moveObject(session, toPath(path), destination);
+            session.save();
+            return noContent().build();
+        } finally {
+            session.logout();
+        }
+
+    }
+
 }
