@@ -25,6 +25,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.fcrepo.kernel.FedoraResource;
 import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.slf4j.Logger;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -32,7 +33,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.rdf.model.Model;
 
 /**
  * Utility for injecting HTTP-contextual data into a Dataset
@@ -71,10 +71,10 @@ public class HttpTripleUtil implements ApplicationContextAware {
                     e.getValue();
             LOGGER.debug("Adding response information using {}", beanName);
 
-            final Model m =
+            final RdfStream m =
                     uriAwareResourceModelFactory.createModelForResource(
                             resource, uriInfo, graphSubjects);
-            dataset.addNamedModel(beanName, m);
+            dataset.addNamedModel(beanName, m.asModel());
         }
 
     }

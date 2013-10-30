@@ -22,7 +22,7 @@ import javax.ws.rs.core.UriInfo;
 import org.fcrepo.kernel.FedoraResource;
 import org.fcrepo.kernel.rdf.GraphSubjects;
 
-import com.hp.hpl.jena.rdf.model.Model;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 
 /**
  * Helper to generate an RDF model for a FedoraResource that (likely) creates
@@ -41,7 +41,7 @@ public interface UriAwareResourceModelFactory {
      * @return
      * @throws RepositoryException
      */
-    Model createModelForResource(final FedoraResource resource,
+    RdfStream createModelForResource(final FedoraResource resource,
             final UriInfo uriInfo, GraphSubjects graphSubjects)
         throws RepositoryException;
 }

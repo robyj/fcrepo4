@@ -96,7 +96,7 @@ public class HttpApiResourcesTest {
         final Resource graphSubject = mockSubjects.getGraphSubject(mockNode);
 
         final Model model =
-            testObj.createModelForResource(mockResource, uriInfo, mockSubjects);
+            testObj.createModelForResource(mockResource, uriInfo, mockSubjects).asModel();
 
         assertTrue(model.contains(graphSubject, HAS_SEARCH_SERVICE));
         assertTrue(model.contains(graphSubject, HAS_SITEMAP));
@@ -116,7 +116,7 @@ public class HttpApiResourcesTest {
         final Resource graphSubject = mockSubjects.getGraphSubject(mockNode);
 
         final Model model =
-            testObj.createModelForResource(mockResource, uriInfo, mockSubjects);
+            testObj.createModelForResource(mockResource, uriInfo, mockSubjects).asModel();
 
         assertTrue(model.contains(graphSubject, HAS_VERSION_HISTORY));
         assertEquals(2, model.listObjectsOfProperty(graphSubject,
@@ -133,7 +133,7 @@ public class HttpApiResourcesTest {
         final Resource graphSubject = mockSubjects.getGraphSubject(mockNode);
 
         final Model model =
-            testObj.createModelForResource(mockResource, uriInfo, mockSubjects);
+            testObj.createModelForResource(mockResource, uriInfo, mockSubjects).asModel();
 
         assertTrue(model.contains(graphSubject, HAS_FIXITY_SERVICE));
     }

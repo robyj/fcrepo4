@@ -32,6 +32,7 @@ import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.rdf.impl.DefaultGraphSubjects;
 import org.fcrepo.http.commons.test.util.TestHelpers;
 import org.fcrepo.jcr.FedoraJcrTypes;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -71,10 +72,10 @@ public class WebhooksResourcesTest {
 
         Resource graphSubject = mockSubjects.getGraphSubject(mockNode);
 
-        final Model model =
+        final RdfStream model =
                 testObj.createModelForResource(mockResource, uriInfo,
                         mockSubjects);
 
-        assertTrue(model.contains(graphSubject, HAS_SUBSCRIPTION_SERVICE));
+        assertTrue(model.asModel().contains(graphSubject, HAS_SUBSCRIPTION_SERVICE));
     }
 }

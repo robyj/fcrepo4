@@ -19,11 +19,15 @@ package org.fcrepo.syndication;
 import javax.jcr.RepositoryException;
 import javax.ws.rs.core.UriInfo;
 
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.fcrepo.kernel.FedoraResource;
 import org.fcrepo.kernel.RdfLexicon;
 import org.fcrepo.http.commons.api.rdf.UriAwareResourceModelFactory;
 import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.jcr.FedoraJcrTypes;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.springframework.stereotype.Component;
 
 import com.hp.hpl.jena.rdf.model.Model;
@@ -37,20 +41,20 @@ import com.hp.hpl.jena.rdf.model.Resource;
 public class RssResources implements UriAwareResourceModelFactory {
 
     @Override
-    public Model createModelForResource(FedoraResource resource,
+    public RdfStream createModelForResource(FedoraResource resource,
             UriInfo uriInfo, GraphSubjects graphSubjects)
         throws RepositoryException {
 
-        final Model model = ModelFactory.createDefaultModel();
-        final Resource s = graphSubjects.getGraphSubject(resource.getNode());
+        final RdfStream triples = new RdfStream();
+        final Node s = graphSubjects.getGraphSubject(resource.getNode()).asNode();
 
         if (resource.getNode().getPrimaryNodeType().isNodeType(
                 FedoraJcrTypes.ROOT)) {
-            model.add(s, RdfLexicon.HAS_FEED, model.createResource(uriInfo
-                    .getBaseUriBuilder().path(RSSPublisher.class).build()
-                    .toASCIIString()));
+            triples.concat(Triple.create(s, RdfLexicon.HAS_FEED.asNode(), NodeFactory.createURI(uriInfo
+                                                                                                            .getBaseUriBuilder().path(RSSPublisher.class).build()
+                                                                                                            .toASCIIString())));
         }
 
-        return model;
+        return triples;
     }
 }
