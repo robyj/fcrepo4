@@ -25,7 +25,6 @@ import javax.ws.rs.core.UriInfo;
 
 import org.fcrepo.kernel.FedoraResource;
 import org.fcrepo.kernel.rdf.GraphSubjects;
-import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.slf4j.Logger;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -64,23 +63,17 @@ public class HttpTripleUtil implements ApplicationContextAware {
             GraphSubjects graphSubjects) throws RepositoryException {
 
         LOGGER.debug("Adding additional HTTP context triples to dataset");
-        for (final Map.Entry<String, UriAwareResourceModelFactory> e : getUriAwareTripleFactories()
-                .entrySet()) {
+        for (final Map.Entry<String, FedoraHttpRdfTripleProvider> e : getOtherTripleProviders().entrySet()) {
             final String beanName = e.getKey();
-            final UriAwareResourceModelFactory uriAwareResourceModelFactory =
-                    e.getValue();
-            LOGGER.debug("Adding response information using {}", beanName);
+            final FedoraHttpRdfTripleProvider provider = e.getValue();
 
-            final RdfStream m =
-                    uriAwareResourceModelFactory.createModelForResource(
-                            resource, uriInfo, graphSubjects);
-            dataset.addNamedModel(beanName, m.asModel());
+            dataset.addNamedModel(beanName, provider.getRdfStream(graphSubjects, resource, uriInfo).asModel());
         }
 
     }
 
-    private Map<String, UriAwareResourceModelFactory> getUriAwareTripleFactories() {
+    private Map<String, FedoraHttpRdfTripleProvider> getOtherTripleProviders() {
         return applicationContext
-                .getBeansOfType(UriAwareResourceModelFactory.class);
+                .getBeansOfType(FedoraHttpRdfTripleProvider.class);
     }
 }

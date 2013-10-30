@@ -16,6 +16,7 @@
 
 package org.fcrepo.http.api;
 
+import static java.util.Collections.singletonMap;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.fcrepo.http.commons.domain.RDFMediaType.N3;
 import static org.fcrepo.http.commons.domain.RDFMediaType.N3_ALT1;
@@ -24,8 +25,10 @@ import static org.fcrepo.http.commons.domain.RDFMediaType.NTRIPLES;
 import static org.fcrepo.http.commons.domain.RDFMediaType.RDF_JSON;
 import static org.fcrepo.http.commons.domain.RDFMediaType.RDF_XML;
 import static org.fcrepo.http.commons.domain.RDFMediaType.TURTLE;
+import static org.fcrepo.kernel.RdfLexicon.HAS_FIXITY_SERVICE;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -38,10 +41,16 @@ import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
 import org.fcrepo.http.commons.api.rdf.HttpGraphSubjects;
 import org.fcrepo.http.commons.session.InjectedSession;
 import org.fcrepo.kernel.Datastream;
+import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -57,7 +66,7 @@ import com.hp.hpl.jena.query.Dataset;
 @Component
 @Scope("prototype")
 @Path("/{path: .*}/fcr:fixity")
-public class FedoraFixity extends AbstractResource {
+public class FedoraFixity extends AbstractResource implements FedoraHttpRdfTripleProvider {
 
     @InjectedSession
     protected Session session;
@@ -96,5 +105,13 @@ public class FedoraFixity extends AbstractResource {
         } finally {
             session.logout();
         }
+    }
+
+    @Override
+    public RdfStream getRdfStream(final GraphSubjects graphSubjects, final FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+        final Map<String, String> pathMap =
+            singletonMap("path", resource.getPath().substring(1));
+
+        return new RdfStream(Triple.create(graphSubjects.getGraphSubject(resource.getNode()).asNode(), HAS_FIXITY_SERVICE.asNode(), NodeFactory.createURI(uriInfo.getBaseUriBuilder().path(FedoraFixity.class).buildFromMap(pathMap).toASCIIString())));
     }
 }

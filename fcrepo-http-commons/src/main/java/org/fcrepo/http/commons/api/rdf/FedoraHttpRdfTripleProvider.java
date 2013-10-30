@@ -13,35 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.fcrepo.http.commons.api.rdf;
+
+import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 
 import javax.jcr.RepositoryException;
 import javax.ws.rs.core.UriInfo;
 
-import org.fcrepo.kernel.FedoraResource;
-import org.fcrepo.kernel.rdf.GraphSubjects;
-
-import org.fcrepo.kernel.utils.iterators.RdfStream;
-
-/**
- * Helper to generate an RDF model for a FedoraResource that (likely) creates
- * relations from our resource to other HTTP components
- */
-public interface UriAwareResourceModelFactory {
-
+public interface FedoraHttpRdfTripleProvider {
     /**
-     * Given a resource, the UriInfo and a way to generate graph subjects,
-     * create a model with triples to inject into an RDF response for the
-     * resource (e.g. to add HATEOAS links)
+     * When triples are being serialized for the client, {@link HttpTripleUtil}
+     * will scan @Components with this interface, and call this method to
+     * give them an opportunity to inject additional triples (not represented
+     * in the data, e.g. to JAX-RS resources)
      *
-     * @param resource
-     * @param uriInfo
      * @param graphSubjects
+     * @param resource
      * @return
      * @throws RepositoryException
      */
-    RdfStream createModelForResource(final FedoraResource resource,
-            final UriInfo uriInfo, GraphSubjects graphSubjects)
-        throws RepositoryException;
+    RdfStream getRdfStream(final GraphSubjects graphSubjects, final FedoraResource resource, final UriInfo uriInfo) throws RepositoryException;
 }

@@ -22,6 +22,8 @@ import static javax.ws.rs.core.MediaType.TEXT_XML;
 import static org.fcrepo.jcr.FedoraJcrTypes.FEDORA_OBJECT;
 import static org.fcrepo.jcr.FedoraJcrTypes.JCR_CREATED;
 import static org.fcrepo.jcr.FedoraJcrTypes.JCR_LASTMODIFIED;
+import static org.fcrepo.jcr.FedoraJcrTypes.ROOT;
+import static org.fcrepo.kernel.RdfLexicon.HAS_SITEMAP;
 import static org.modeshape.jcr.api.JcrConstants.JCR_NAME;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -39,12 +41,19 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.UriInfo;
 
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
 import org.fcrepo.http.commons.jaxb.responses.sitemap.SitemapEntry;
 import org.fcrepo.http.commons.jaxb.responses.sitemap.SitemapIndex;
 import org.fcrepo.http.commons.jaxb.responses.sitemap.SitemapUrlSet;
 import org.fcrepo.http.commons.session.InjectedSession;
+import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -61,7 +70,7 @@ import com.codahale.metrics.annotation.Timed;
 @Component
 @Scope("prototype")
 @Path("/sitemap")
-public class FedoraSitemap extends AbstractResource {
+public class FedoraSitemap extends AbstractResource implements FedoraHttpRdfTripleProvider {
 
     @InjectedSession
     protected Session session;
@@ -170,5 +179,17 @@ public class FedoraSitemap extends AbstractResource {
             (lkDateValue != null) ? lkDateValue.getDate() : null;
         return new SitemapEntry(uriInfo.getBaseUriBuilder().path(
                 FedoraNodes.class).build(path.substring(1)), lastKnownDate);
+    }
+
+
+    @Override
+    public RdfStream getRdfStream(final GraphSubjects graphSubjects, final FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+        final RdfStream triples = new RdfStream();
+
+        if (resource.getNode().getPrimaryNodeType().isNodeType(ROOT)) {
+            triples.concat(Triple.create(graphSubjects.getGraphSubject(resource.getNode()).asNode(), HAS_SITEMAP.asNode(), NodeFactory.createURI(uriInfo.getBaseUriBuilder().path(FedoraSitemap.class).build().toASCIIString())));
+        }
+
+        return triples;
     }
 }

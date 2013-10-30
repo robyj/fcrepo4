@@ -19,6 +19,7 @@ package org.fcrepo.syndication;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.collect.ImmutableList.copyOf;
 import static com.google.common.collect.Lists.transform;
+import static org.fcrepo.kernel.RdfLexicon.HAS_FEED;
 import static org.fcrepo.kernel.utils.EventType.getEventType;
 
 import java.io.ByteArrayInputStream;
@@ -33,9 +34,17 @@ import javax.jcr.observation.Event;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.UriInfo;
 import javax.xml.transform.stream.StreamSource;
 
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
+import org.fcrepo.jcr.FedoraJcrTypes;
+import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Component;
 
@@ -56,7 +65,7 @@ import com.sun.syndication.io.SyndFeedOutput;
  */
 @Component
 @Path("/fcr:rss")
-public class RSSPublisher extends AbstractResource {
+public class RSSPublisher extends AbstractResource implements FedoraHttpRdfTripleProvider {
 
     private static final Integer FEED_LENGTH = 10;
 
@@ -146,4 +155,14 @@ public class RSSPublisher extends AbstractResource {
         }
     }
 
+    @Override
+    public RdfStream getRdfStream(GraphSubjects graphSubjects, FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+        final RdfStream triples = new RdfStream();
+
+        if (resource.getNode().getPrimaryNodeType().isNodeType(FedoraJcrTypes.ROOT)) {
+            triples.concat(Triple.create(graphSubjects.getGraphSubject(resource.getNode()).asNode(), HAS_FEED.asNode(), NodeFactory.createURI(uriInfo.getBaseUriBuilder().path(RSSPublisher.class).build().toASCIIString())));
+        }
+
+        return triples;
+    }
 }

@@ -16,12 +16,17 @@
 
 package org.fcrepo.http.api;
 
+import static com.hp.hpl.jena.rdf.model.ResourceFactory.createResource;
+import static java.util.Collections.singletonMap;
 import static javax.ws.rs.core.Response.ok;
+import static org.fcrepo.kernel.RdfLexicon.HAS_SERIALIZATION;
+import static org.fcrepo.kernel.RdfLexicon.RDFS_LABEL;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -34,9 +39,19 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
+import javax.ws.rs.core.UriInfo;
 
+import com.google.common.collect.ImmutableSet;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.rdf.model.Resource;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
 import org.fcrepo.http.commons.session.InjectedSession;
+import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.fcrepo.serialization.FedoraObjectSerializer;
 import org.fcrepo.serialization.SerializerUtil;
 import org.slf4j.Logger;
@@ -50,7 +65,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope("prototype")
 @Path("/{path: .*}/fcr:export")
-public class FedoraExport extends AbstractResource {
+public class FedoraExport extends AbstractResource implements FedoraHttpRdfTripleProvider {
 
     @Autowired
     protected SerializerUtil serializers;
@@ -105,5 +120,25 @@ public class FedoraExport extends AbstractResource {
                     }
                 }).build();
 
+    }
+
+    @Override
+    public RdfStream getRdfStream(final GraphSubjects graphSubjects, final FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+
+        final ImmutableSet.Builder<Triple> tripleBuilder = new ImmutableSet.Builder<Triple>();
+
+        final Node node = graphSubjects.getGraphSubject(resource.getNode()).asNode();
+
+        // fcr:export?format=xyz
+        for (final String key : serializers.keySet()) {
+            final Map<String, String> pathMap =
+                singletonMap("path", resource.getPath().substring(1));
+            final Resource format =
+                createResource(uriInfo.getBaseUriBuilder().path(FedoraExport.class).queryParam("format", key).buildFromMap(pathMap).toASCIIString());
+            tripleBuilder.add(Triple.create(node, HAS_SERIALIZATION.asNode(), format.asNode()));
+            tripleBuilder.add(Triple.create(format.asNode(), RDFS_LABEL.asNode(), NodeFactory.createLiteral(key)));
+        }
+
+        return new RdfStream(tripleBuilder.build());
     }
 }

@@ -31,6 +31,7 @@ import static org.fcrepo.http.commons.domain.RDFMediaType.RDF_JSON;
 import static org.fcrepo.http.commons.domain.RDFMediaType.RDF_XML;
 import static org.fcrepo.http.commons.domain.RDFMediaType.TURTLE;
 import static org.fcrepo.kernel.RdfLexicon.FIRST_PAGE;
+import static org.fcrepo.kernel.RdfLexicon.HAS_SEARCH_SERVICE;
 import static org.fcrepo.kernel.RdfLexicon.NEXT_PAGE;
 import static org.fcrepo.kernel.RdfLexicon.PAGE;
 import static org.fcrepo.kernel.RdfLexicon.PAGE_OF;
@@ -54,11 +55,17 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
 import org.fcrepo.http.commons.api.rdf.HttpGraphSubjects;
 import org.fcrepo.http.commons.responses.HtmlTemplate;
 import org.fcrepo.http.commons.session.InjectedSession;
 import org.fcrepo.jcr.FedoraJcrTypes;
+import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -79,7 +86,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
 @Scope("prototype")
 @Path("/fcr:search")
 public class FedoraFieldSearch extends AbstractResource implements
-        FedoraJcrTypes {
+        FedoraJcrTypes, FedoraHttpRdfTripleProvider {
 
     @InjectedSession
     protected Session session;
@@ -240,5 +247,16 @@ public class FedoraFieldSearch extends AbstractResource implements
         } finally {
             session.logout();
         }
+    }
+
+    @Override
+    public RdfStream getRdfStream(final GraphSubjects graphSubjects, final FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+        final RdfStream triples = new RdfStream();
+
+        if (resource.getNode().getPrimaryNodeType().isNodeType(ROOT)) {
+            triples.concat(Triple.create(graphSubjects.getGraphSubject(resource.getNode()).asNode(), HAS_SEARCH_SERVICE.asNode(), NodeFactory.createURI(uriInfo.getBaseUriBuilder().path(FedoraFieldSearch.class).build().toASCIIString())));
+        }
+
+        return triples;
     }
 }

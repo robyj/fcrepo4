@@ -19,6 +19,7 @@ package org.fcrepo.webhooks;
 import static javax.ws.rs.core.Response.created;
 import static javax.ws.rs.core.Response.noContent;
 import static javax.ws.rs.core.Response.ok;
+import static org.fcrepo.kernel.RdfLexicon.HAS_SUBSCRIPTION_SERVICE;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -37,16 +38,24 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
+import org.fcrepo.jcr.FedoraJcrTypes;
 import org.fcrepo.jms.legacy.LegacyMethod;
+import org.fcrepo.kernel.FedoraResource;
 import org.fcrepo.kernel.observer.FedoraEvent;
 import org.fcrepo.http.commons.session.InjectedSession;
+import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -62,7 +71,7 @@ import com.google.common.eventbus.Subscribe;
 @Path("/fcr:webhooks")
 @Scope("prototype")
 @Component
-public class FedoraWebhooks extends AbstractResource {
+public class FedoraWebhooks extends AbstractResource implements FedoraHttpRdfTripleProvider {
 
     /**
      * Prefix to use to find webhooks callback-bearing nodes
@@ -212,7 +221,7 @@ public class FedoraWebhooks extends AbstractResource {
 
         final Node n =
                 jcrTools.findOrCreateChild(session.getRootNode(), "webhook:" +
-                        id, "webhook:callback");
+                                                                      id, "webhook:callback");
 
         n.setProperty("webhook:callbackUrl", callbackUrl);
 
@@ -281,5 +290,16 @@ public class FedoraWebhooks extends AbstractResource {
     public final void logoutSession() {
         eventBus.unregister(this);
         readOnlySession.logout();
+    }
+
+    @Override
+    public RdfStream getRdfStream(GraphSubjects graphSubjects, FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+        final RdfStream triples = new RdfStream();
+
+        if (resource.getNode().getPrimaryNodeType().isNodeType(FedoraJcrTypes.ROOT)) {
+            triples.concat(Triple.create(graphSubjects.getGraphSubject(resource.getNode()).asNode(), HAS_SUBSCRIPTION_SERVICE.asNode(), NodeFactory.createURI(uriInfo.getBaseUriBuilder().path(FedoraWebhooks.class).build().toASCIIString())));
+        }
+
+        return triples;
     }
 }

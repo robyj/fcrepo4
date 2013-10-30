@@ -21,6 +21,8 @@ import static javax.ws.rs.core.Response.created;
 import static javax.ws.rs.core.Response.noContent;
 import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static org.fcrepo.jcr.FedoraJcrTypes.ROOT;
+import static org.fcrepo.kernel.RdfLexicon.HAS_TRANSACTION_SERVICE;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.List;
@@ -35,12 +37,19 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
 import org.fcrepo.http.commons.session.InjectedSession;
+import org.fcrepo.kernel.FedoraResource;
 import org.fcrepo.kernel.Transaction;
 import org.fcrepo.kernel.TxSession;
+import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.services.TransactionService;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -52,7 +61,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope("prototype")
 @Path("/{path: .*}/fcr:tx")
-public class FedoraTransactions extends AbstractResource {
+public class FedoraTransactions extends AbstractResource implements FedoraHttpRdfTripleProvider {
 
     private static final Logger LOGGER = getLogger(FedoraTransactions.class);
 
@@ -161,5 +170,16 @@ public class FedoraTransactions extends AbstractResource {
             txService.rollback(txId);
         }
         return noContent().build();
+    }
+
+    @Override
+    public RdfStream getRdfStream(final GraphSubjects graphSubjects, final FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+        final RdfStream triples = new RdfStream();
+
+        if (resource.getNode().getPrimaryNodeType().isNodeType(ROOT)) {
+            triples.concat(Triple.create(graphSubjects.getGraphSubject(resource.getNode()).asNode(), HAS_TRANSACTION_SERVICE.asNode(), NodeFactory.createURI(uriInfo.getBaseUriBuilder().path(FedoraTransactions.class).build().toASCIIString())));
+        }
+
+        return triples;
     }
 }

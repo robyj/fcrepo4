@@ -16,6 +16,7 @@
 
 package org.fcrepo.http.api;
 
+import static java.util.Collections.singletonMap;
 import static javax.ws.rs.core.Response.noContent;
 import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -27,10 +28,13 @@ import static org.fcrepo.http.commons.domain.RDFMediaType.POSSIBLE_RDF_VARIANTS;
 import static org.fcrepo.http.commons.domain.RDFMediaType.RDF_JSON;
 import static org.fcrepo.http.commons.domain.RDFMediaType.RDF_XML;
 import static org.fcrepo.http.commons.domain.RDFMediaType.TURTLE;
+import static org.fcrepo.jcr.FedoraJcrTypes.ROOT;
+import static org.fcrepo.kernel.RdfLexicon.HAS_VERSION_HISTORY;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -47,11 +51,16 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Variant;
 
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
 import org.fcrepo.http.commons.api.rdf.HttpGraphSubjects;
 import org.fcrepo.http.commons.responses.GraphStoreStreamingOutput;
 import org.fcrepo.http.commons.session.InjectedSession;
 import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.rdf.GraphSubjects;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -66,7 +75,7 @@ import com.hp.hpl.jena.query.Dataset;
 @Component
 @Scope("prototype")
 @Path("/{path: .*}/fcr:versions")
-public class FedoraVersions extends AbstractResource {
+public class FedoraVersions extends AbstractResource implements FedoraHttpRdfTripleProvider {
 
     @InjectedSession
     protected Session session;
@@ -179,5 +188,21 @@ public class FedoraVersions extends AbstractResource {
             session.logout();
         }
 
+    }
+
+    @Override
+    public RdfStream getRdfStream(final GraphSubjects graphSubjects, final FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+
+        final RdfStream triples = new RdfStream();
+
+        if (!resource.getNode().getPrimaryNodeType().isNodeType(ROOT)) {
+
+            final Map<String, String> pathMap =
+                singletonMap("path", resource.getPath().substring(1));
+            triples.concat(Triple.create(graphSubjects.getGraphSubject(resource.getNode()).asNode(), HAS_VERSION_HISTORY.asNode(), NodeFactory.createURI(uriInfo.getBaseUriBuilder().path(FedoraVersions.class).buildFromMap(pathMap).toASCIIString())));
+
+        }
+
+        return triples;
     }
 }

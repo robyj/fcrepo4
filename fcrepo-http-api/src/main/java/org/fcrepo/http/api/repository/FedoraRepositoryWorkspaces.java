@@ -28,6 +28,8 @@ import static org.fcrepo.http.commons.domain.RDFMediaType.NTRIPLES;
 import static org.fcrepo.http.commons.domain.RDFMediaType.RDF_JSON;
 import static org.fcrepo.http.commons.domain.RDFMediaType.RDF_XML;
 import static org.fcrepo.http.commons.domain.RDFMediaType.TURTLE;
+import static org.fcrepo.jcr.FedoraJcrTypes.ROOT;
+import static org.fcrepo.kernel.RdfLexicon.HAS_WORKSPACE_SERVICE;
 import static org.fcrepo.kernel.RdfLexicon.NOT_IMPLEMENTED;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -44,11 +46,17 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
 import org.fcrepo.http.api.FedoraNodes;
 import org.fcrepo.http.commons.AbstractResource;
+import org.fcrepo.http.commons.api.rdf.FedoraHttpRdfTripleProvider;
 import org.fcrepo.http.commons.responses.HtmlTemplate;
 import org.fcrepo.http.commons.session.InjectedSession;
+import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.utils.JcrRdfTools;
+import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -65,7 +73,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
 @Component
 @Scope("prototype")
 @Path("/fcr:workspaces")
-public class FedoraRepositoryWorkspaces extends AbstractResource {
+public class FedoraRepositoryWorkspaces extends AbstractResource implements FedoraHttpRdfTripleProvider {
 
     private static final Logger logger = getLogger(FedoraRepositoryWorkspaces.class);
 
@@ -130,5 +138,16 @@ public class FedoraRepositoryWorkspaces extends AbstractResource {
                 uriInfo.getAbsolutePathBuilder().path(FedoraNodes.class)
                         .buildFromMap(singletonMap("path", path))).build();
 
+    }
+
+    @Override
+    public RdfStream getRdfStream(final GraphSubjects graphSubjects, final FedoraResource resource, final UriInfo uriInfo) throws RepositoryException {
+        final RdfStream triples = new RdfStream();
+
+        if (resource.getNode().getPrimaryNodeType().isNodeType(ROOT)) {
+            triples.concat(Triple.create(graphSubjects.getGraphSubject(resource.getNode()).asNode(), HAS_WORKSPACE_SERVICE.asNode(), NodeFactory.createURI(uriInfo.getBaseUriBuilder().path(FedoraRepositoryWorkspaces.class).build().toASCIIString())));
+        }
+
+        return triples;
     }
 }
