@@ -81,6 +81,10 @@ public interface FedoraResource {
      */
     Collection<String> getModels() throws RepositoryException;
 
+    @Deprecated
+    Dataset updatePropertiesDataset(final GraphSubjects subjects,
+            final String sparqlUpdateStatement) throws RepositoryException;
+
     /**
      * Update the properties Dataset with a SPARQL Update query. The updated
      * properties may be serialized to the JCR store.
@@ -93,8 +97,8 @@ public interface FedoraResource {
      * @param sparqlUpdateStatement
      * @throws RepositoryException
      */
-    Dataset updatePropertiesDataset(final GraphSubjects subjects,
-            final String sparqlUpdateStatement) throws RepositoryException;
+    void updatePropertiesDataset(final GraphSubjects subjects,
+            final PropertiesUpdateTactic update) throws RepositoryException;
 
     /**
      * Return the JCR properties of this object as a Jena {@link Dataset}
@@ -167,8 +171,22 @@ public interface FedoraResource {
      * @return
      * @throws RepositoryException
      */
+    @Deprecated
     RdfStream replaceProperties(final GraphSubjects graphSubjects,
         final Model inputModel) throws RepositoryException;
+
+    /**
+     * Replace the properties of this object with the properties from the given
+     * {@link RdfStream}
+     *
+     * @param graphSubjects
+     * @param inputModel
+     * @return
+     * @throws RepositoryException
+     */
+    RdfStream replaceProperties(final GraphSubjects graphSubjects,
+        final RdfStream stream) throws RepositoryException;
+
 
     /**
      * Construct an ETag value from the last modified date and path. JCR has a
