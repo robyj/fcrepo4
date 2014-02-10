@@ -53,6 +53,8 @@ public class RdfRemover extends PersistingRdfStreamConsumer {
      */
     public RdfRemover(final GraphSubjects graphSubjects, final Session session,
         final RdfStream stream) {
+        // we filter the stream to remove managed triples, which we
+        // do not want to try to remove
         super(graphSubjects, session, stream);
     }
 

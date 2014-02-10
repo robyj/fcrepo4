@@ -17,9 +17,12 @@
 package org.fcrepo.kernel.utils.iterators;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Iterator;
 import java.util.Set;
+
+import org.slf4j.Logger;
 
 import com.google.common.collect.AbstractIterator;
 
@@ -41,6 +44,8 @@ public class DifferencingIterator<E> extends AbstractIterator<E> {
 
     private Iterator<E> source;
 
+    private static final Logger logger = getLogger(DifferencingIterator.class);
+
     /**
      * Ordinary constructor.
      *
@@ -59,25 +64,25 @@ public class DifferencingIterator<E> extends AbstractIterator<E> {
     protected E computeNext() {
         if (source.hasNext()) {
             E next = source.next();
+            logger.debug("Examining element: {}", next);
             // we only want to return this element if it is not common
             // to the two inputs
             while (common.contains(next) || notCommon.contains(next)) {
-                // it was common, so shift it to common
+                logger.debug("Determined {} to be common to input iterator and input set.", next);
                 if (notCommon.remove(next)) {
+                    logger.debug("Moving {} from not-common output set to common output set.", next);
                     common.add(next);
                 }
-                // move onto the next candidate
                 if (!source.hasNext()) {
                     return endOfData();
-                } else {
-                    next = source.next();
                 }
+                logger.debug("Moving on to next candidate.");
+                next = source.next();
             }
-            // it was not common so return it
+            logger.debug("{} was not common so we will return it as the next output element.", next);
             return next;
-        } else {
-            return endOfData();
         }
+        return endOfData();
     }
 
     /**

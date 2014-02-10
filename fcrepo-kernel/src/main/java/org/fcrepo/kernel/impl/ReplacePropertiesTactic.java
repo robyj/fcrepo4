@@ -13,19 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.fcrepo.kernel;
+/**
+ *
+ */
+package org.fcrepo.kernel.impl;
 
+import org.fcrepo.kernel.PropertiesUpdateTactic;
 import org.fcrepo.kernel.utils.iterators.RdfStream;
-
-import com.google.common.base.Function;
 
 
 /**
- * Represents the calculation (but not the persistence) of an update to a resource's properties.
+ * A {@link PropertiesUpdateTactic} that simply replaces all properties with a new batch.
  *
  * @author ajs6f
- * @date Feb 6, 2014
+ * @date Feb 7, 2014
  */
-public interface PropertiesUpdateTactic extends Function<RdfStream, RdfStream> {
+public class ReplacePropertiesTactic implements PropertiesUpdateTactic {
+
+    private RdfStream newTriples;
+
+    /**
+     * @param triples
+     */
+    public ReplacePropertiesTactic(final RdfStream triples) {
+        this.newTriples = triples;
+    }
+
+    /* (non-Javadoc)
+     * @see com.google.common.base.Function#apply(java.lang.Object)
+     */
+    @Override
+    public RdfStream apply(final RdfStream input) {
+        return newTriples;
+    }
 
 }

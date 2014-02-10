@@ -39,6 +39,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Set;
+
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -55,7 +57,6 @@ import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.modeshape.jcr.api.JcrTools;
 import org.slf4j.Logger;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.hp.hpl.jena.graph.Triple;
@@ -107,8 +108,7 @@ public class FedoraResourceImpl extends JcrTools implements FedoraJcrTypes,
     }
 
     private void initializeNewResourceProperties(final Session session,
-        final String path, final String nodeType)
-                                                     throws RepositoryException {
+        final String path, final String nodeType) throws RepositoryException {
         this.node = findOrCreateNode(session, path, NT_FOLDER, nodeType);
 
         if (node.isNew()) {
@@ -157,10 +157,9 @@ public class FedoraResourceImpl extends JcrTools implements FedoraJcrTypes,
         if (node.hasProperty(JCR_CREATED)) {
             return new Date(node.getProperty(JCR_CREATED).getDate()
                     .getTimeInMillis());
-        } else {
-            LOGGER.debug("Node {} does not have a createdDate", node);
-            return null;
         }
+        LOGGER.debug("Node {} does not have a createdDate", node);
+        return null;
     }
 
     /*
@@ -172,11 +171,10 @@ public class FedoraResourceImpl extends JcrTools implements FedoraJcrTypes,
         if (node.hasProperty(JCR_LASTMODIFIED)) {
             return new Date(node.getProperty(JCR_LASTMODIFIED).getDate()
                     .getTimeInMillis());
-        } else {
-            LOGGER.debug(
-                    "Could not get last modified date property for node {}",
-                    node);
         }
+        LOGGER.debug(
+                "Could not get last modified date property for node {}",
+                node);
 
         final Date createdDate = getCreatedDate();
 
@@ -210,9 +208,8 @@ public class FedoraResourceImpl extends JcrTools implements FedoraJcrTypes,
                     .newArrayList(Iterators.transform(property2values
                             .apply(node.getProperty(FROZEN_MIXIN_TYPES)),
                             value2string));
-        } else {
-            return map(node.getMixinNodeTypes(), nodetype2name);
         }
+        return map(node.getMixinNodeTypes(), nodetype2name);
     }
 
     /*
@@ -220,6 +217,7 @@ public class FedoraResourceImpl extends JcrTools implements FedoraJcrTypes,
      * @see org.fcrepo.kernel.FedoraResource#updatePropertiesDataset
      * (org.fcrepo.kernel.rdf.GraphSubjects, java.lang.String)
      */
+    @Deprecated
     @Override
     public Dataset updatePropertiesDataset(final GraphSubjects subjects,
         final String sparqlUpdateStatement) throws RepositoryException {
@@ -347,17 +345,6 @@ public class FedoraResourceImpl extends JcrTools implements FedoraJcrTypes,
 
     /*
      * (non-Javadoc)
-     * @see org.fcrepo.kernel.FedoraResource#replaceProperties
-     * (org.fcrepo.kernel.rdf.GraphSubjects, com.hp.hpl.jena.rdf.model.Model)
-     */
-    @Override
-    public RdfStream replaceProperties(final GraphSubjects graphSubjects,
-            final Model inputModel) throws RepositoryException {
-        return replaceProperties(graphSubjects, RdfStream.fromModel(inputModel));
-    }
-
-    /*
-     * (non-Javadoc)
      * @see org.fcrepo.kernel.FedoraResource#getEtagValue()
      */
     @Override
@@ -368,28 +355,25 @@ public class FedoraResourceImpl extends JcrTools implements FedoraJcrTypes,
     }
 
     @Override
-    public void updatePropertiesDataset(final GraphSubjects idTranslator,
+    public void updateProperties(final GraphSubjects idTranslator,
             final PropertiesUpdateTactic tactic) throws RepositoryException {
-        final RdfStream newTriples = tactic.apply(getTriples(idTranslator));
-        replaceProperties(idTranslator, newTriples);
-    }
 
-    @Override
-    public RdfStream replaceProperties(final GraphSubjects graphSubjects,
-            final RdfStream replacementStream) throws RepositoryException {
+        final RdfStream originalTriples = getTriples(idTranslator);
+        final RdfStream newTriples = tactic.apply(originalTriples);
 
-        final RdfStream originalTriples = getTriples(graphSubjects);
         final DifferencingIterator<Triple> differencer =
-            new DifferencingIterator<>(copyOf(replacementStream.iterator()),
-                    originalTriples);
+            new DifferencingIterator<>(copyOf(newTriples.iterator()), originalTriples);
 
-        new RdfRemover(graphSubjects, getNode().getSession(), replacementStream
-                .withThisContext(differencer)).consume();
+        new RdfRemover(idTranslator, getNode().getSession(), newTriples.withThisContext(differencer)).consume();
+        final Set<? extends Triple> common = differencer.common();
+        LOGGER.debug("Discovered common triples which will not be re-persisted:\n{}", common);
 
-        new RdfAdder(graphSubjects, getNode().getSession(), replacementStream
-                .withThisContext(differencer.notCommon())).consume();
+        final Set<? extends Triple> notCommon = differencer.notCommon();
+        LOGGER.debug("Discovered disjoint triples which will be persisted:\n{}", notCommon);
 
-        return replacementStream.withThisContext(Iterables.concat(differencer
-                .common(), differencer.notCommon()));
+        new RdfAdder(idTranslator, getNode().getSession(), newTriples.withThisContext(notCommon)).consume();
+
     }
+
+
 }

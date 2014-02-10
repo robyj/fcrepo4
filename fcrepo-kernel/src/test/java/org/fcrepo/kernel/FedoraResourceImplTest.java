@@ -53,7 +53,6 @@ import javax.jcr.version.VersionHistory;
 
 import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.rdf.JcrRdfTools;
-import org.fcrepo.kernel.rdf.impl.DefaultGraphSubjects;
 import org.fcrepo.kernel.utils.FedoraTypesUtils;
 import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.junit.Before;
@@ -297,68 +296,20 @@ public class FedoraResourceImplTest {
     }
 
     @Test
-    public void testIsNew() throws RepositoryException {
+    public void testIsNew() {
         when(mockNode.isNew()).thenReturn(true);
         assertTrue("resource state should be the same as the node state",
                 testObj.isNew());
     }
 
     @Test
-    public void testIsNotNew() throws RepositoryException {
+    public void testIsNotNew() {
         when(mockNode.isNew()).thenReturn(false);
         assertFalse("resource state should be the same as the node state",
                 testObj.isNew());
     }
 
-    @Test
-    public void testReplacePropertiesDataset() throws Exception {
 
-        mockStatic(JcrRdfTools.class);
-        final DefaultGraphSubjects defaultGraphSubjects = new DefaultGraphSubjects(mockSession);
-        when(JcrRdfTools.withContext(defaultGraphSubjects, mockSession)).thenReturn(mockJcrRdfTools);
-
-        when(mockNode.getPath()).thenReturn("/xyz");
-
-        final Model propertiesModel = createDefaultModel();
-        propertiesModel.add(propertiesModel.createResource("a"),
-                               propertiesModel.createProperty("b"),
-                               "c");
-
-
-        propertiesModel.add(propertiesModel.createResource("i"),
-                               propertiesModel.createProperty("j"),
-                               "k");
-
-        propertiesModel.add(propertiesModel.createResource("x"),
-                               propertiesModel.createProperty("y"),
-                               "z");
-        final RdfStream propertiesStream = RdfStream.fromModel(propertiesModel);
-        when(mockJcrRdfTools.getJcrTriples(mockNode)).thenReturn(propertiesStream);
-
-        final RdfStream treeStream = new RdfStream();
-        when(mockJcrRdfTools.getTreeTriples(mockNode)).thenReturn(treeStream);
-        final Model problemsModel = createDefaultModel();
-        when(getProblemsModel()).thenReturn(problemsModel);
-
-        final Model replacementModel = createDefaultModel();
-
-        replacementModel.add(replacementModel.createResource("a"),
-                                replacementModel.createProperty("b"),
-                               "n");
-
-
-        replacementModel.add(replacementModel.createResource("i"),
-                                replacementModel.createProperty("j"),
-                               "k");
-
-        final Model replacements = testObj.replaceProperties(defaultGraphSubjects, replacementModel).asModel();
-
-        assertTrue(replacements.containsAll(replacementModel));
-
-        assertFalse(problemsModel.contains(propertiesModel.createResource("x"),
-                                              propertiesModel.createProperty("y"),
-                                              "z"));
-    }
     @Test
     public void shouldGetEtagForAnObject() throws RepositoryException {
         final Property mockMod = mock(Property.class);

@@ -26,7 +26,6 @@ import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.utils.iterators.RdfStream;
 
 import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.rdf.model.Model;
 
 /**
  * @author ajs6f
@@ -81,6 +80,12 @@ public interface FedoraResource {
      */
     Collection<String> getModels() throws RepositoryException;
 
+    /**
+     * @param subjects
+     * @param sparqlUpdateStatement
+     * @return
+     * @throws RepositoryException
+     */
     @Deprecated
     Dataset updatePropertiesDataset(final GraphSubjects subjects,
             final String sparqlUpdateStatement) throws RepositoryException;
@@ -97,7 +102,7 @@ public interface FedoraResource {
      * @param sparqlUpdateStatement
      * @throws RepositoryException
      */
-    void updatePropertiesDataset(final GraphSubjects subjects,
+    void updateProperties(final GraphSubjects subjects,
             final PropertiesUpdateTactic update) throws RepositoryException;
 
     /**
@@ -161,32 +166,6 @@ public interface FedoraResource {
      * @return
      */
     Boolean isNew();
-
-    /**
-     * Replace the properties of this object with the properties from the given
-     * model
-     *
-     * @param graphSubjects
-     * @param inputModel
-     * @return
-     * @throws RepositoryException
-     */
-    @Deprecated
-    RdfStream replaceProperties(final GraphSubjects graphSubjects,
-        final Model inputModel) throws RepositoryException;
-
-    /**
-     * Replace the properties of this object with the properties from the given
-     * {@link RdfStream}
-     *
-     * @param graphSubjects
-     * @param inputModel
-     * @return
-     * @throws RepositoryException
-     */
-    RdfStream replaceProperties(final GraphSubjects graphSubjects,
-        final RdfStream stream) throws RepositoryException;
-
 
     /**
      * Construct an ETag value from the last modified date and path. JCR has a

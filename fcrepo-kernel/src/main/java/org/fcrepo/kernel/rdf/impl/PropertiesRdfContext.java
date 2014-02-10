@@ -30,8 +30,10 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import java.security.AccessControlException;
 import java.util.Iterator;
+
 import javax.jcr.Property;
 import javax.jcr.RepositoryException;
+
 import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.rdf.impl.mappings.PropertyToTriple;
 import org.fcrepo.kernel.rdf.impl.mappings.ZippingIterator;
@@ -147,6 +149,14 @@ public class PropertiesRdfContext extends NodeRdfContext {
                 Iterators.transform(
                     nonBinaryPropertiesCopy, property2triple)));
 
+    }
+
+    /* (non-Javadoc)
+     * @see org.fcrepo.kernel.utils.iterators.RdfStream#topic()
+     */
+    @Override
+    public Node topic() {
+        return subject();
     }
 
 }

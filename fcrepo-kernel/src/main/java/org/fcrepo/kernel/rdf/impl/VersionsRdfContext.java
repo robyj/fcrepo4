@@ -46,17 +46,11 @@ import com.hp.hpl.jena.graph.Triple;
  * @author ajs6f
  * @date Oct 15, 2013
  */
-public class VersionsRdfContext extends RdfStream {
+public class VersionsRdfContext extends NodeRdfContext {
 
     private final VersionManager versionManager;
 
     private final VersionHistory versionHistory;
-
-    private final GraphSubjects graphSubjects;
-
-    private final LowLevelStorageService lowLevelStorageService;
-
-    private final com.hp.hpl.jena.graph.Node subject;
 
     /**
      * Ordinary constructor.
@@ -69,10 +63,7 @@ public class VersionsRdfContext extends RdfStream {
     public VersionsRdfContext(final Node node, final GraphSubjects graphSubjects,
         final LowLevelStorageService lowLevelStorageService)
         throws RepositoryException {
-        super();
-        this.lowLevelStorageService = lowLevelStorageService;
-        this.graphSubjects = graphSubjects;
-        this.subject = graphSubjects.getGraphSubject(node).asNode();
+        super(node, graphSubjects, lowLevelStorageService);
         versionManager = node.getSession().getWorkspace().getVersionManager();
         versionHistory = versionManager.getVersionHistory(node.getPath());
 
@@ -93,14 +84,14 @@ public class VersionsRdfContext extends RdfStream {
                 try {
                     final Node frozenNode = version.getFrozenNode();
                     final com.hp.hpl.jena.graph.Node versionSubject =
-                        graphSubjects.getGraphSubject(frozenNode).asNode();
+                        graphSubjects().getGraphSubject(frozenNode).asNode();
 
                     final RdfStream results =
                             new RdfStream(new PropertiesRdfContext(frozenNode,
-                                    graphSubjects, lowLevelStorageService)
+                                    graphSubjects(), lowLevelStorageService())
                                     .iterator());
 
-                    results.concat(create(subject, HAS_VERSION.asNode(),
+                    results.concat(create(subject(), HAS_VERSION.asNode(),
                             versionSubject));
 
                     for (final String label : versionHistory
@@ -117,6 +108,15 @@ public class VersionsRdfContext extends RdfStream {
             }
 
         };
+
+    /*
+     * (non-Javadoc)
+     * @see org.fcrepo.kernel.utils.iterators.RdfStream#topic()
+     */
+    @Override
+    public com.hp.hpl.jena.graph.Node topic() {
+        return subject();
+    }
 
 
 }

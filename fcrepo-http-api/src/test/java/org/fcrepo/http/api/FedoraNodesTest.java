@@ -69,6 +69,7 @@ import org.apache.commons.io.IOUtils;
 import org.fcrepo.kernel.Datastream;
 import org.fcrepo.kernel.FedoraObject;
 import org.fcrepo.kernel.FedoraResourceImpl;
+import org.fcrepo.kernel.PropertiesUpdateTactic;
 import org.fcrepo.kernel.identifiers.PidMinter;
 import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.services.DatastreamService;
@@ -164,7 +165,7 @@ public class FedoraNodesTest {
 
     @Test
     @Ignore
-    public void testIngestAndMint() throws RepositoryException {
+    public void testIngestAndMint() {
         // final Response actual =
         // testObj.ingestAndMint(createPathList("objects"));
         // assertNotNull(actual);
@@ -306,7 +307,7 @@ public class FedoraNodesTest {
     }
 
     @Test
-    public void testDescribeObject() throws RepositoryException, IOException {
+    public void testDescribeObject() throws RepositoryException {
         final String pid = "FedoraObjectsRdfTest1";
         final String path = "/" + pid;
 
@@ -320,7 +321,6 @@ public class FedoraNodesTest {
                 mockRdfStream2);
         when(mockNodes.getObject(isA(Session.class), isA(String.class)))
                 .thenReturn(mockObject);
-        final Request mockRequest = mock(Request.class);
         final RdfStream rdfStream =
             testObj.describe(createPathList(path), 0, -2, null, mockRequest,
                     mockResponse, mockUriInfo);
@@ -331,7 +331,7 @@ public class FedoraNodesTest {
     }
 
     @Test
-    public void testDescribeObjectNoInlining() throws RepositoryException, IOException {
+    public void testDescribeObjectNoInlining() throws RepositoryException {
         final String pid = "FedoraObjectsRdfTest1";
         final String path = "/" + pid;
 
@@ -346,7 +346,6 @@ public class FedoraNodesTest {
                 mockRdfStream2);
         when(mockNodes.getObject(isA(Session.class), isA(String.class)))
             .thenReturn(mockObject);
-        final Request mockRequest = mock(Request.class);
         final RdfStream rdfStream =
             testObj.describe(createPathList(path), 0, -1, "", mockRequest, mockResponse,
                                 mockUriInfo);
@@ -362,8 +361,6 @@ public class FedoraNodesTest {
         final InputStream mockStream =
                 new ByteArrayInputStream("my-sparql-statement".getBytes());
         when(mockNodes.getObject(mockSession, path)).thenReturn(mockObject);
-        when(mockObject.updatePropertiesDataset(any(GraphSubjects.class), any(String.class)))
-            .thenReturn(mockDataset);
         when(mockObject.getEtagValue()).thenReturn("");
 
         when(mockObject.getLastModifiedDate()).thenReturn(Calendar.getInstance().getTime());
@@ -372,8 +369,8 @@ public class FedoraNodesTest {
         when(mockModel.isEmpty()).thenReturn(true);
         testObj.updateSparql(createPathList(pid), getUriInfoImpl(), mockStream, mockRequest);
 
-        verify(mockObject).updatePropertiesDataset(any(GraphSubjects.class),
-                eq("my-sparql-statement"));
+        verify(mockObject).updateProperties(any(GraphSubjects.class),
+                any(PropertiesUpdateTactic.class));
         verify(mockSession).save();
         verify(mockSession).logout();
     }
@@ -392,7 +389,7 @@ public class FedoraNodesTest {
         when(mockNodes.getObject(mockSession, path)).thenReturn(mockObject);
 
         testObj.createOrReplaceObjectRdf(createPathList(pid), getUriInfoImpl(), MediaType.valueOf("application/n3"), mockStream, mockRequest);
-        verify(mockObject).replaceProperties(any(GraphSubjects.class), any(Model.class));
+        verify(mockObject).updateProperties(any(GraphSubjects.class), any(PropertiesUpdateTactic.class));
     }
 
     @Test

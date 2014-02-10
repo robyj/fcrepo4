@@ -17,13 +17,10 @@
 package org.fcrepo.kernel.utils.iterators;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.and;
-import static com.google.common.base.Predicates.not;
 import static com.hp.hpl.jena.rdf.model.ModelFactory.createDefaultModel;
 import static com.hp.hpl.jena.vocabulary.RDF.type;
 import static org.fcrepo.kernel.rdf.JcrRdfTools.getJcrNamespaceForRDFNamespace;
 import static org.fcrepo.kernel.rdf.ManagedRdf.isManagedMixin;
-import static org.fcrepo.kernel.rdf.ManagedRdf.isManagedTriple;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Map;
@@ -63,7 +60,7 @@ public abstract class PersistingRdfStreamConsumer implements RdfStreamConsumer {
 
     private final JcrRdfTools jcrRdfTools;
 
-    // if it's not about a Fedora resource, we don't care.
+    // if it's not about a Fedora resource, we don't care or we treat it as an error.
     protected final Predicate<Triple> isFedoraSubjectTriple;
 
     private static final Model m = createDefaultModel();
@@ -94,17 +91,15 @@ public abstract class PersistingRdfStreamConsumer implements RdfStreamConsumer {
                             "Discovered a Fedora-relevant subject in triple: {}.",
                             t);
                 } else {
-                    LOGGER.debug("Ignoring triple: {}.", t);
-
+                    throw new IllegalArgumentException(new MalformedRdfException(
+                            "Discovered triple with non-Fedora subject! " + t));
                 }
                 return result;
             }
 
         };
         // we knock out managed RDF and non-Fedora RDF
-        this.stream =
-            stream.withThisContext(stream.filter(and(not(isManagedTriple),
-                    isFedoraSubjectTriple)).iterator());
+        this.stream = new UnmanagedRdfStream(stream).filter(isFedoraSubjectTriple);
         this.session = session;
     }
 
@@ -132,7 +127,8 @@ public abstract class PersistingRdfStreamConsumer implements RdfStreamConsumer {
                         subjectNode, mixinResource);
                 operateOnMixin(mixinResource, subjectNode);
             } else {
-                LOGGER.debug("Found repository-managed mixin on which we will not operate.");
+                throw new IllegalArgumentException(new MalformedRdfException("Discovered triple with managed type! "
+                        + t));
             }
         } else {
             LOGGER.debug("Operating on node: {} from triple: {}.", subjectNode,

@@ -60,8 +60,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.UUID;
 
-import javax.jcr.RepositoryException;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Variant;
 
 import nu.validator.htmlparser.sax.HtmlParser;
@@ -307,7 +305,7 @@ public class FedoraNodesIT extends AbstractResourceIT {
     public void testGetObjectGraphVariants() throws Exception {
         createObject("FedoraDescribeTestGraph");
 
-        for (Variant variant : RDFMediaType.POSSIBLE_RDF_VARIANTS) {
+        for (final Variant variant : RDFMediaType.POSSIBLE_RDF_VARIANTS) {
 
             final HttpGet getObjMethod =
                     new HttpGet(serverAddress + "FedoraDescribeTestGraph");
@@ -516,9 +514,9 @@ public class FedoraNodesIT extends AbstractResourceIT {
 
     @Test
     public void testUpdateObjectGraphWithProblems() throws Exception {
-        client.execute(postObjMethod("FedoraDescribeTestGraphUpdateBad"));
-        final String subjectURI =
-                serverAddress + "FedoraDescribeTestGraphUpdateBad";
+        final String pid = "testUpdateObjectGraphWithProblems-" + randomUUID().toString().substring(0, 4);
+        client.execute(postObjMethod(pid));
+        final String subjectURI = serverAddress + pid;
         final HttpPatch getObjMethod = new HttpPatch(subjectURI);
         getObjMethod.addHeader("Content-Type", "application/sparql-update");
         final BasicHttpEntity e = new BasicHttpEntity();
@@ -692,7 +690,7 @@ public class FedoraNodesIT extends AbstractResourceIT {
     }
 
     @Test
-    public void testDescribeRdfCached() throws RepositoryException, IOException {
+    public void testDescribeRdfCached() throws IOException {
         final CloseableHttpClient cachingClient =
             CachingHttpClientBuilder.create().setCacheConfig(DEFAULT).build();
         final String pid = "FedoraObjectsRdfTest2";

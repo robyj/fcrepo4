@@ -29,7 +29,6 @@ import static org.fcrepo.http.commons.test.util.TestHelpers.mockDatastream;
 import static org.fcrepo.http.commons.test.util.TestHelpers.mockSession;
 import static org.fcrepo.http.commons.test.util.TestHelpers.setField;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -59,15 +58,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
-import com.hp.hpl.jena.rdf.model.Model;
 import org.apache.commons.io.IOUtils;
 import org.fcrepo.kernel.Datastream;
 import org.fcrepo.kernel.FedoraResourceImpl;
+import org.fcrepo.kernel.PropertiesUpdateTactic;
 import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.services.DatastreamService;
 import org.fcrepo.kernel.services.NodeService;
 import org.fcrepo.kernel.services.VersionService;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -180,12 +178,8 @@ public class FedoraBatchTest {
         multipart.bodyPart(part);
 
         testObj.batchModify(createPathList(pid), multipart);
-        ArgumentCaptor<Model> captor = ArgumentCaptor.forClass(Model.class);
-        verify(mockObject).replaceProperties(any(GraphSubjects.class), captor.capture());
-        final Model capturedModel = captor.getValue();
-        assertTrue(capturedModel.contains(capturedModel.createResource("http://localhost/fcrepo/" + pid),
-                                             capturedModel.createProperty("info:a"),
-                                             capturedModel.createLiteral("xyz")));
+        final ArgumentCaptor<PropertiesUpdateTactic> captor = ArgumentCaptor.forClass(PropertiesUpdateTactic.class);
+        verify(mockObject).updateProperties(any(GraphSubjects.class), captor.capture());
         verify(mockSession).save();
     }
 
@@ -271,7 +265,7 @@ public class FedoraBatchTest {
     }
 
     @Test
-    public void testDeleteDatastreams() throws RepositoryException, IOException {
+    public void testDeleteDatastreams() throws RepositoryException {
         final String pid = "FedoraDatastreamsTest1";
         final String path = "/" + pid;
         final List<String> dsidList = asList("ds1", "ds2");
@@ -318,7 +312,6 @@ public class FedoraBatchTest {
 
     @Test
     public void testGetDatastreamsContentsCached() throws RepositoryException,
-                                                  IOException,
                                                   NoSuchAlgorithmException {
         final String pid = "FedoraDatastreamsTest1";
         final String dsId = "testDS";

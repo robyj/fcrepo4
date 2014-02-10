@@ -29,7 +29,6 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.created;
 import static javax.ws.rs.core.Response.noContent;
 import static javax.ws.rs.core.Response.status;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.apache.http.HttpStatus.SC_BAD_GATEWAY;
 import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.apache.http.HttpStatus.SC_CONFLICT;
@@ -48,7 +47,6 @@ import static org.fcrepo.jcr.FedoraJcrTypes.FEDORA_DATASTREAM;
 import static org.fcrepo.jcr.FedoraJcrTypes.FEDORA_OBJECT;
 import static org.fcrepo.kernel.RdfLexicon.FIRST_PAGE;
 import static org.fcrepo.kernel.RdfLexicon.NEXT_PAGE;
-import static org.fcrepo.kernel.rdf.GraphProperties.PROBLEMS_MODEL_NAME;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
@@ -89,6 +87,7 @@ import javax.ws.rs.core.UriInfo;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.sun.jersey.core.header.ContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.jena.riot.Lang;
 import org.fcrepo.http.commons.AbstractResource;
@@ -98,9 +97,11 @@ import org.fcrepo.http.commons.domain.PATCH;
 import org.fcrepo.http.commons.domain.COPY;
 import org.fcrepo.http.commons.session.InjectedSession;
 import org.fcrepo.kernel.Datastream;
-import org.fcrepo.kernel.FedoraResourceImpl;
 import org.fcrepo.kernel.FedoraResource;
+import org.fcrepo.kernel.PropertiesUpdateTactic;
 import org.fcrepo.kernel.exception.InvalidChecksumException;
+import org.fcrepo.kernel.impl.ReplacePropertiesTactic;
+import org.fcrepo.kernel.impl.SparqlUpdateTactic;
 import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.modeshape.jcr.api.JcrConstants;
@@ -110,7 +111,6 @@ import org.springframework.stereotype.Component;
 
 import com.codahale.metrics.annotation.Timed;
 import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.rdf.model.Model;
 
 /**
@@ -141,7 +141,6 @@ public class FedoraNodes extends AbstractResource {
      * @param uriInfo
      * @return
      * @throws RepositoryException
-     * @throws IOException
      */
     @GET
     @Produces({TURTLE, N3, N3_ALT2, RDF_XML, NTRIPLES, APPLICATION_XML, TEXT_PLAIN, TURTLE_X,
@@ -152,7 +151,7 @@ public class FedoraNodes extends AbstractResource {
             @QueryParam("non-member-properties") final String nonMemberProperties,
             @Context final Request request,
             @Context final HttpServletResponse servletResponse,
-            @Context final UriInfo uriInfo) throws RepositoryException, IOException {
+            @Context final UriInfo uriInfo) throws RepositoryException {
         final String path = toPath(pathList);
         LOGGER.trace("Getting profile for: {}", path);
 
@@ -242,13 +241,9 @@ public class FedoraNodes extends AbstractResource {
     @PATCH
     @Consumes({contentTypeSPARQLUpdate})
     @Timed
-    public Response updateSparql(@PathParam("path")
-            final List<PathSegment> pathList,
-            @Context
-            final UriInfo uriInfo,
-            final InputStream requestBodyStream,
-            @Context final Request request)
-        throws RepositoryException, IOException {
+    public Response updateSparql(@PathParam("path") final List<PathSegment> pathList,
+        @Context final UriInfo uriInfo, final InputStream requestBodyStream,
+        @Context final Request request) throws RepositoryException, IOException {
 
         final String path = toPath(pathList);
         LOGGER.debug("Attempting to update path: {}", path);
@@ -276,29 +271,18 @@ public class FedoraNodes extends AbstractResource {
                     throw new WebApplicationException(builder.build());
                 }
 
-                final Dataset properties = resource.updatePropertiesDataset(new HttpGraphSubjects(
-                        session, FedoraNodes.class, uriInfo), IOUtils
-                        .toString(requestBodyStream));
+                final String sparqlUpdateStatement = IOUtils.toString(requestBodyStream);
 
-
-                final Model problems = properties.getNamedModel(PROBLEMS_MODEL_NAME);
-                if (!problems.isEmpty()) {
-                    LOGGER.info(
-                                   "Found these problems updating the properties for {}: {}",
-                                   path, problems);
-                    return status(FORBIDDEN).entity(problems.toString())
-                            .build();
-
-                }
+                final PropertiesUpdateTactic update = new SparqlUpdateTactic(sparqlUpdateStatement);
+                resource.updateProperties(new HttpGraphSubjects(session, FedoraNodes.class, uriInfo), update);
 
                 session.save();
                 versionService.nodeUpdated(resource.getNode());
 
                 return status(SC_NO_CONTENT).build();
-            } else {
-                return status(SC_BAD_REQUEST).entity(
-                        "SPARQL-UPDATE requests must have content!").build();
             }
+            return status(SC_BAD_REQUEST).entity(
+                    "SPARQL-UPDATE requests must have content!").build();
 
         } finally {
             session.logout();
@@ -360,7 +344,7 @@ public class FedoraNodes extends AbstractResource {
                                                       graphSubjects.getGraphSubject(resource.getNode()).toString(),
                                                       format);
 
-                resource.replaceProperties(graphSubjects, inputModel);
+                resource.updateProperties(graphSubjects, new ReplacePropertiesTactic(RdfStream.fromModel(inputModel)));
             }
 
             session.save();
@@ -450,7 +434,7 @@ public class FedoraNodes extends AbstractResource {
                 }
             }
 
-            final FedoraResourceImpl result;
+            final FedoraResource result;
 
             switch (objectType) {
                 case FEDORA_OBJECT:
@@ -473,7 +457,9 @@ public class FedoraNodes extends AbstractResource {
                 final String contentTypeString = contentType.toString();
 
                 if (contentTypeString.equals(contentTypeSPARQLUpdate)) {
-                    result.updatePropertiesDataset(subjects, IOUtils.toString(requestBodyStream));
+                    final String sparqlUpdateStatement = IOUtils.toString(requestBodyStream);
+                    final PropertiesUpdateTactic update = new SparqlUpdateTactic(sparqlUpdateStatement);
+                    result.updateProperties(new HttpGraphSubjects(session, FedoraNodes.class, uriInfo), update);
                 } else if (contentTypeToLang(contentTypeString) != null) {
 
                     final Lang lang = contentTypeToLang(contentTypeString);
@@ -483,16 +469,13 @@ public class FedoraNodes extends AbstractResource {
                                 "Invalid Content type " + contentType).build());
                     }
 
-                    final String format = lang.getName()
-                                              .toUpperCase();
+                    final String format = lang.getName().toUpperCase();
 
                     final Model inputModel =
-                        createDefaultModel()
-                                                 .read(requestBodyStream,
-                                                          subjects.getGraphSubject(result.getNode()).toString(),
-                                                          format);
+                        createDefaultModel().read(requestBodyStream,
+                                subjects.getGraphSubject(result.getNode()).toString(), format);
 
-                    result.replaceProperties(subjects, inputModel);
+                    result.updateProperties(subjects, new ReplacePropertiesTactic(RdfStream.fromModel(inputModel)));
                 } else if (result instanceof Datastream) {
 
                     final String originalFileName;
@@ -544,13 +527,12 @@ public class FedoraNodes extends AbstractResource {
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Timed
-    public Response createObjectFromFormPost(
-                                                @PathParam("path") final List<PathSegment> pathList,
-                                                @FormDataParam("mixin") final String mixin,
-                                                @FormDataParam("slug") final String slug,
-                                                @Context final UriInfo uriInfo,
-                                                @FormDataParam("file") final InputStream file
-    ) throws RepositoryException, URISyntaxException, InvalidChecksumException, ParseException, IOException {
+    public Response createObjectFromFormPost(@PathParam("path")
+        final List<PathSegment> pathList, @FormDataParam("mixin")
+        final String mixin, @FormDataParam("slug")
+        final String slug, @Context
+        final UriInfo uriInfo, @FormDataParam("file") final InputStream file)
+        throws RepositoryException, URISyntaxException, InvalidChecksumException, ParseException, IOException {
 
         return createObject(pathList, mixin, null, null, null, slug, uriInfo, file);
 

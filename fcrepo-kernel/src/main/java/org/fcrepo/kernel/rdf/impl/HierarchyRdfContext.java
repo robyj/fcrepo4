@@ -182,4 +182,13 @@ public class HierarchyRdfContext extends NodeRdfContext {
             }
         };
 
+    /*
+     * (non-Javadoc)
+     * @see org.fcrepo.kernel.utils.iterators.RdfStream#topic()
+     */
+    @Override
+    public Node topic() {
+        return subject();
+    }
+
 }

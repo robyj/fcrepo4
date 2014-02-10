@@ -34,10 +34,12 @@ import static org.fcrepo.kernel.RdfLexicon.HAS_CONTENT_LOCATION_VALUE;
 
 import java.util.Calendar;
 import java.util.Iterator;
+
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 
 import com.hp.hpl.jena.vocabulary.RDF;
+
 import org.fcrepo.kernel.rdf.GraphSubjects;
 import org.fcrepo.kernel.services.LowLevelStorageService;
 import org.fcrepo.kernel.utils.FixityResult;
@@ -116,5 +118,13 @@ public class FixityRdfContext extends NodeRdfContext {
 
     private com.hp.hpl.jena.graph.Node getTransientFixitySubject() {
         return createURI(subject().getURI() + "#fixity/" + Calendar.getInstance().getTimeInMillis());
+    }
+
+    /* (non-Javadoc)
+     * @see org.fcrepo.kernel.utils.iterators.RdfStream#topic()
+     */
+    @Override
+    public com.hp.hpl.jena.graph.Node topic() {
+        return subject();
     }
 }

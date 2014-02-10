@@ -24,6 +24,7 @@ import com.google.common.base.Predicate;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 /**
  * {@link Predicate}s for determining when RDF is managed by the repository.
@@ -35,16 +36,16 @@ public class ManagedRdf {
 
     private static final Model model = createDefaultModel();
 
-    public static final Predicate<Triple> isManagedTriple =
-        new Predicate<Triple>() {
+    public static final Predicate<Triple> isManagedTriple = new Predicate<Triple>() {
 
-            @Override
-            public boolean apply(final Triple t) {
-                return isManagedPredicate.apply(model.asStatement(t)
-                        .getPredicate());
-            }
+        @Override
+        public boolean apply(final Triple t) {
+            return isManagedPredicate.apply(model.asStatement(t).getPredicate())
+                    || (t.getPredicate().equals(RDF.type.asNode()) && isManagedMixin.apply(model.wrapAsResource(t
+                            .getObject())));
+        }
 
-        };
+    };
 
     public static final Predicate<Resource> isManagedMixin =
         new Predicate<Resource>() {
