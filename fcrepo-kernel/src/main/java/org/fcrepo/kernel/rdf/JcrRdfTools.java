@@ -56,7 +56,6 @@ import org.fcrepo.kernel.rdf.impl.NamespaceRdfContext;
 import org.fcrepo.kernel.rdf.impl.PropertiesRdfContext;
 import org.fcrepo.kernel.rdf.impl.VersionsRdfContext;
 import org.fcrepo.kernel.rdf.impl.WorkspaceRdfContext;
-import org.fcrepo.kernel.services.LowLevelStorageService;
 import org.fcrepo.kernel.utils.FixityResult;
 import org.fcrepo.kernel.utils.iterators.RdfStream;
 import org.modeshape.jcr.api.NamespaceRegistry;
@@ -98,8 +97,6 @@ public class JcrRdfTools {
     public static BiMap<String, String> rdfNamespacesToJcrNamespaces =
         jcrNamespacesToRDFNamespaces.inverse();
 
-    private LowLevelStorageService llstore;
-
     private final IdentifierTranslator graphSubjects;
 
     private Session session;
@@ -111,32 +108,17 @@ public class JcrRdfTools {
      * @param graphSubjects
      */
     public JcrRdfTools(final IdentifierTranslator graphSubjects) {
-        this(graphSubjects, null, null);
+        this(graphSubjects, null);
     }
-
-    /**
-     * Factory method to create a new JcrRdfTools utility with a graph subjects
-     * converter
-     *
-     * @param graphSubjects
-     * @param session
-     */
-    public JcrRdfTools(final IdentifierTranslator graphSubjects, final Session session) {
-        this(graphSubjects, session, null);
-    }
-
     /**
      * Contructor with even more context.
      *
      * @param graphSubjects
      * @param session
-     * @param lls
      */
-    public JcrRdfTools(final IdentifierTranslator graphSubjects,
-            final Session session, final LowLevelStorageService lls) {
+    public JcrRdfTools(final IdentifierTranslator graphSubjects, final Session session) {
         this.graphSubjects = graphSubjects;
         this.session = session;
-        this.llstore = lls;
     }
 
     /**
@@ -160,19 +142,6 @@ public class JcrRdfTools {
         final Session session) {
         checkNotNull(idTranslator, "JcrRdfTools must operate with a non-null IdentifierTranslator for context!");
         return new JcrRdfTools(idTranslator, session);
-    }
-
-    /**
-     * Factory method to create a new JcrRdfTools instance with full context.
-     *
-     * @param graphSubjects
-     * @param session
-     * @param lls
-     * @return
-     */
-    public static JcrRdfTools withContext(final IdentifierTranslator graphSubjects,
-            final Session session, final LowLevelStorageService lls) {
-        return new JcrRdfTools(graphSubjects, session, lls);
     }
 
     /**
@@ -239,8 +208,7 @@ public class JcrRdfTools {
         final RdfStream results = new RdfStream();
         while (nodeIterator.hasNext()) {
             final Node node = nodeIterator.next();
-            results.concat(new PropertiesRdfContext(node, graphSubjects,
-                    llstore));
+            results.concat(new PropertiesRdfContext(node, graphSubjects));
             if (iteratorSubject != null) {
                 results.concat(singleton(create(iteratorSubject.asNode(), HAS_MEMBER_OF_RESULT.asNode(), graphSubjects
                         .getSubject(node.getPath()).asNode())));
@@ -259,7 +227,7 @@ public class JcrRdfTools {
      * @throws RepositoryException
      */
     public RdfStream getJcrTriples(final Node node) throws RepositoryException {
-        return new PropertiesRdfContext(node, graphSubjects, llstore);
+        return new PropertiesRdfContext(node, graphSubjects);
     }
 
     /**
@@ -271,7 +239,7 @@ public class JcrRdfTools {
      */
     public RdfStream getVersionTriples(final Node node)
         throws RepositoryException {
-        return new VersionsRdfContext(node, graphSubjects, llstore);
+        return new VersionsRdfContext(node, graphSubjects);
     }
 
     /**
@@ -284,7 +252,7 @@ public class JcrRdfTools {
      */
     public RdfStream getJcrTriples(final Node node,
             final Iterable<FixityResult> blobs) throws RepositoryException {
-        return new FixityRdfContext(node, graphSubjects, llstore, blobs);
+        return new FixityRdfContext(node, graphSubjects, blobs);
     }
 
     /**
@@ -316,7 +284,7 @@ public class JcrRdfTools {
      */
     public RdfStream getTreeTriples(final Node node,
                                     final HierarchyRdfContextOptions options) throws RepositoryException {
-        return new HierarchyRdfContext(node, graphSubjects, llstore, options);
+        return new HierarchyRdfContext(node, graphSubjects, options);
     }
 
     /**
@@ -594,13 +562,6 @@ public class JcrRdfTools {
 
         return propertyName;
 
-    }
-
-    /**
-     * Set the Low-level storage server implementation
-     */
-    public void setLlstore(final LowLevelStorageService lowLevelStorageService) {
-        llstore = lowLevelStorageService;
     }
 
     /**

@@ -38,7 +38,6 @@ import javax.jcr.Workspace;
 import javax.jcr.nodetype.NodeType;
 
 import org.fcrepo.kernel.rdf.IdentifierTranslator;
-import org.fcrepo.kernel.services.LowLevelStorageService;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -72,9 +71,6 @@ public class NodeRdfContextTest {
 
     @Mock
     private Repository mockRepository;
-
-    @Mock
-    private LowLevelStorageService mockLowLevelStorageService;
 
     @Mock
     private NamespaceRegistry mockNamespaceRegistry;
@@ -129,7 +125,7 @@ public class NodeRdfContextTest {
     public void testRdfTypesForNodetypes() throws RepositoryException,
         IOException {
         final Model actual =
-            new NodeRdfContext(mockNode, mockGraphSubjects, mockLowLevelStorageService).asModel();
+            new NodeRdfContext(mockNode, mockGraphSubjects).asModel();
         final Resource expectedRdfTypePrimary =
             createResource(REPOSITORY_NAMESPACE + mockPrimaryNodeTypeName);
         final Resource expectedRdfTypeMixin =
@@ -153,8 +149,7 @@ public class NodeRdfContextTest {
     public void testBadRepository() throws RepositoryException {
         when(mockNamespaceRegistry.getURI("jcr")).thenThrow(
                 new RepositoryException("Expected."));
-        new NodeRdfContext(mockNode, mockGraphSubjects,
-                    mockLowLevelStorageService).asModel();
+        new NodeRdfContext(mockNode, mockGraphSubjects).asModel();
 
     }
 
