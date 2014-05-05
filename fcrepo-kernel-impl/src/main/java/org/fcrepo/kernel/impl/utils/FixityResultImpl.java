@@ -20,6 +20,8 @@ import org.fcrepo.kernel.utils.FixityResult;
 
 import javax.jcr.RepositoryException;
 
+import javax.jcr.RepositoryException;
+
 import static java.util.Objects.hash;
 
 import java.net.URI;
