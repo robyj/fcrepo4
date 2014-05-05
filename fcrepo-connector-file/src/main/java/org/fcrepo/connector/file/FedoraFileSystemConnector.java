@@ -33,8 +33,8 @@ import java.util.Map;
 
 import org.infinispan.schematic.document.Document;
 import org.modeshape.connector.filesystem.FileSystemConnector;
-import org.modeshape.jcr.federation.spi.DocumentReader;
-import org.modeshape.jcr.federation.spi.DocumentWriter;
+import org.modeshape.jcr.spi.federation.DocumentReader;
+import org.modeshape.jcr.spi.federation.DocumentWriter;
 import org.modeshape.jcr.value.BinaryValue;
 import org.modeshape.jcr.value.Name;
 import org.modeshape.jcr.value.Property;

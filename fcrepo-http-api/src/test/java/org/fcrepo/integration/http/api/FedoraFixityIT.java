@@ -27,6 +27,7 @@ import static org.fcrepo.kernel.RdfLexicon.HAS_SIZE;
 import static org.junit.Assert.assertTrue;
 
 import org.apache.http.client.methods.HttpGet;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.hp.hpl.jena.update.GraphStore;

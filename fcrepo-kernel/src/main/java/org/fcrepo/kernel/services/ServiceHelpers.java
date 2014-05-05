@@ -40,6 +40,7 @@ import javax.jcr.query.RowIterator;
 import org.infinispan.distexec.DefaultExecutorService;
 import org.infinispan.distexec.DistributedExecutorService;
 import org.modeshape.jcr.value.binary.infinispan.InfinispanBinaryStore;
+import org.modeshape.jcr.value.binary.infinispan.InfinispanUtils;
 import org.springframework.stereotype.Component;
 
 /**
@@ -138,7 +139,7 @@ public abstract class ServiceHelpers {
      * A static factory function to insulate services from the details of
      * building a DistributedExecutorService
      * 
-     * @param cache
+     * @param cacheStore
      * @return
      */
     public static DistributedExecutorService getClusterExecutor(
@@ -146,7 +147,7 @@ public abstract class ServiceHelpers {
         // Watch out! This is trying to pluck out the blob cache store. This
         // works as long as
         // modeshape continues to be ordered..
-        return new DefaultExecutorService(cacheStore.getCaches().get(1));
+        return new DefaultExecutorService(InfinispanUtils.getBlobCache(cacheStore));
     }
 
     /**

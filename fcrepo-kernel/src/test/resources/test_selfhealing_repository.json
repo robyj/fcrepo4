@@ -8,7 +8,7 @@
     },
     "storage" : {
         "cacheName" : "FedoraRepository",
-        "cacheConfiguration" : "infinispan_selfhealing_configuration.xml",
+        "cacheConfiguration" : "config/testing/infinispan-chained.xml",
         "binaryStorage" : {
             "type" : "cache",
             "dataCacheName" : "FedoraRepository",

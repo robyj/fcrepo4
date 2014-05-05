@@ -16,14 +16,14 @@
         }
     },
     "externalSources" : {
-      "fileSystem" : {
-        "classname" : "org.fcrepo.connector.file.FedoraFileSystemConnector",
-        "directoryPath" : "target/test-classes/test-objects",
-        "readonly" : false,
-        "extraPropertiesStorage": "json",
-        "cacheTtlSeconds" : 5,
-        "projections" : [ "default:/files => /" ]
-      }
+        "fileSystem" : {
+            "classname" : "org.fcrepo.connector.file.FedoraFileSystemConnector",
+            "directoryPath" : "target/test-classes/test-objects",
+            "readonly" : false,
+            "extraPropertiesStorage": "json",
+            "cacheTtlSeconds" : 5,
+            "projections" : [ "default:/files => /" ]
+        }
     },
     "security" : {
         "anonymous" : {
