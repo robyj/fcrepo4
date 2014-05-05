@@ -22,10 +22,8 @@ import static org.fcrepo.kernel.utils.FixityResult.FixityState.SUCCESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.ByteArrayInputStream;
@@ -40,9 +38,6 @@ import javax.jcr.Property;
 import javax.jcr.RepositoryException;
 
 import org.fcrepo.kernel.utils.impl.LocalBinaryStoreEntry;
-import org.fcrepo.kernel.utils.infinispan.StoreChunkInputStream;
-import org.infinispan.loaders.CacheStore;
-import org.infinispan.loaders.CacheStoreConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,7 +55,6 @@ import org.slf4j.Logger;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({"org.slf4j.*", "javax.xml.parsers.*", "org.apache.xerces.*"})
-@PrepareForTest({StoreChunkInputStream.class})
 public class LowLevelCacheEntryTest {
 
     private static final Logger LOGGER =
@@ -76,12 +70,6 @@ public class LowLevelCacheEntryTest {
 
     @Mock
     private BinaryStore otherStore;
-
-    @Mock
-    private CacheStore mockLowLevelCacheStore;
-
-    @Mock
-    private CacheStoreConfig mockConfig;
 
     @Mock
     private FileSystemBinaryStore fsbs;

@@ -29,12 +29,13 @@
     <enunciate.version>1.27</enunciate.version>
     <httpcomponents.version>4.3.2</httpcomponents.version>
     <httpclient.version>4.3.3</httpclient.version>
-    <infinispan.version>5.3.0.Final</infinispan.version>
+    <metrics.version>3.0.2</metrics.version>
+    <fcrepo-build-tools.version>1.4-SNAPSHOT</fcrepo-build-tools.version>
+    <infinispan.version>6.0.2.Final</infinispan.version>
     <jersey.version>1.17.1</jersey.version>
     <jgroups.version>3.4.0.Final</jgroups.version>
     <logback.version>1.0.13</logback.version>
-    <modeshape.version>3.8.0.Final</modeshape.version>
-    <metrics.version>3.0.2</metrics.version>
+    <modeshape.version>4.0-SNAPSHOT</modeshape.version>
     <sesame.version>2.7.7</sesame.version>
     <slf4j.version>1.7.7</slf4j.version>
     <spring.version>4.0.3.RELEASE</spring.version>
