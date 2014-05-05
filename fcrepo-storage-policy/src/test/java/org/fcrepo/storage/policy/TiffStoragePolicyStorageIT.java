@@ -21,6 +21,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
