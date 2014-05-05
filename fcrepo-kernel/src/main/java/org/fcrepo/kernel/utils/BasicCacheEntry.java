@@ -16,6 +16,7 @@
 
 package org.fcrepo.kernel.utils;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 
 import static com.google.common.base.Throwables.propagate;
 import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
@@ -53,7 +55,7 @@ public abstract class BasicCacheEntry implements CacheEntry {
      * @throws RepositoryException
      */
     @Override
-    public FixityResult checkFixity(final URI checksum, final long size)
+    public Collection<FixityResult> checkFixity(final URI checksum, final long size)
         throws RepositoryException {
 
         final String digest = ContentDigest.getAlgorithm(checksum);
@@ -88,7 +90,7 @@ public abstract class BasicCacheEntry implements CacheEntry {
 
             LOGGER.debug("Got {}", result.toString());
 
-            return result;
+            return ImmutableSet.of(result);
         } catch (final IOException e) {
             LOGGER.debug("Got error closing input stream: {}", e);
             throw propagate(e);

@@ -18,7 +18,7 @@ package org.fcrepo.kernel.utils;
 
 import java.io.InputStream;
 
-import javax.jcr.Binary;
+import javax.jcr.Property;
 import javax.jcr.RepositoryException;
 
 /**
@@ -28,17 +28,15 @@ import javax.jcr.RepositoryException;
  */
 public class BinaryCacheEntry extends BasicCacheEntry {
 
-    protected final Binary binary;
-    protected final String externalUri;
+    private final Property property;
 
     /**
      * Create a new BinaryCacheEntry
-     * @param binary
+     * @param property
      */
-    public BinaryCacheEntry(final Binary binary, final String externalUri) {
+    public BinaryCacheEntry(final Property property) {
         super();
-        this.binary = binary;
-        this.externalUri = externalUri;
+        this.property = property;
     }
 
     /*
@@ -47,7 +45,7 @@ public class BinaryCacheEntry extends BasicCacheEntry {
      */
     @Override
     public InputStream getInputStream() throws RepositoryException {
-        return this.binary.getStream();
+        return property.getBinary().getStream();
     }
 
     /*
@@ -55,8 +53,12 @@ public class BinaryCacheEntry extends BasicCacheEntry {
      * @see org.fcrepo.kernel.utils.CacheEntry#getExternalIdentifier()
      */
     @Override
-    public String getExternalIdentifier() {
-        return this.externalUri;
+    public String getExternalIdentifier() throws RepositoryException {
+        return property.getPath();
+    }
+
+    protected Property property() {
+        return property;
     }
 
 }

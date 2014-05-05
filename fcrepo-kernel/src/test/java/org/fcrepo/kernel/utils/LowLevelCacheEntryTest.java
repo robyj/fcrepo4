@@ -35,12 +35,12 @@ import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import javax.jcr.Binary;
+import javax.jcr.Property;
 import javax.jcr.RepositoryException;
 
-import org.fcrepo.kernel.utils.impl.CacheStoreEntry;
 import org.fcrepo.kernel.utils.impl.LocalBinaryStoreEntry;
 import org.fcrepo.kernel.utils.infinispan.StoreChunkInputStream;
-import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.CacheStoreConfig;
 import org.junit.Before;
@@ -50,6 +50,7 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.modeshape.jcr.value.BinaryKey;
+import org.modeshape.jcr.value.BinaryValue;
 import org.modeshape.jcr.value.binary.BinaryStore;
 import org.modeshape.jcr.value.binary.FileSystemBinaryStore;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -65,9 +66,7 @@ public class LowLevelCacheEntryTest {
     private static final Logger LOGGER =
             getLogger(LowLevelCacheEntryTest.class);
 
-    private LowLevelCacheEntry testObj;
-
-    private LowLevelCacheEntry testIspnObj;
+    private CacheEntry testObj;
 
     @Mock
     private InputStream mockIS;
@@ -87,29 +86,27 @@ public class LowLevelCacheEntryTest {
     @Mock
     private FileSystemBinaryStore fsbs;
 
+    @Mock
+    private Property mockProperty;
+
+    @Mock
+    private BinaryValue mockBinary;
+
     private BinaryKey testKey;
 
     @Before
     public void setUp() throws Exception {
         testKey = new BinaryKey("test-key-123");
-        testObj = new LocalBinaryStoreEntry(mockStore, testKey);
-        testIspnObj =
-                new CacheStoreEntry(mockLowLevelCacheStore, "foo", testKey);
+        testObj = new LocalBinaryStoreEntry(mockStore, mockProperty);
+        when(mockProperty.getBinary()).thenReturn(mockBinary);
+        when(mockBinary.getKey()).thenReturn(testKey);
     }
 
     @Test
     public void shouldBeEqualIfTheKeyAndStoreAreEqual() throws Exception {
-        final LowLevelCacheEntry otherObj =
-                new LocalBinaryStoreEntry(mockStore, testKey);
+        final CacheEntry otherObj =
+                new LocalBinaryStoreEntry(mockStore, mockProperty);
         assertTrue(testObj.equals(otherObj));
-    }
-
-    @Test
-    public void shouldBeEqualIfTheKeyStoreAndCacheStoreAreEqual()
-            throws Exception {
-        final LowLevelCacheEntry ispnObject =
-                new CacheStoreEntry(mockLowLevelCacheStore, "foo", testKey);
-        assertTrue(testIspnObj.equals(ispnObject));
     }
 
     @Test
@@ -118,19 +115,12 @@ public class LowLevelCacheEntryTest {
         assertFalse(testObj.equals(""));
     }
 
-    @Test
-    public void shouldNotBeEqualIfTheBinaryKeyIsDifferent() throws Exception {
-        final LowLevelCacheEntry otherObj =
-                new LocalBinaryStoreEntry(mockStore, new BinaryKey(
-                        "321-yek-tset"));
-        assertFalse(testObj.equals(otherObj));
-    }
 
     @Test
     public void shouldNotBeEqualIfTheStoreIsDifferent() throws Exception {
 
-        final LowLevelCacheEntry otherObj =
-                new LocalBinaryStoreEntry(otherStore, testKey);
+        final CacheEntry otherObj =
+                new LocalBinaryStoreEntry(otherStore, mockProperty);
         assertFalse(testObj.equals(otherObj));
     }
 
@@ -142,53 +132,9 @@ public class LowLevelCacheEntryTest {
     }
 
     @Test
-    public void testGetInputStreamWithAnInfinispanStore() throws Exception {
-        mockStatic(StoreChunkInputStream.class);
-        when(mockStore.getInputStream(testKey)).thenReturn(mockIS);
-        final InputStream is = testIspnObj.getInputStream();
-        assertTrue(is instanceof StoreChunkInputStream);
-    }
-
-    @Test
-    public void testStoreValue() throws Exception {
-        testObj.storeValue(mockIS);
-        verify(mockStore).storeValue(mockIS);
-        when(mockConfig.toString()).thenReturn("mockCacheStoreConfig");
-        when(mockLowLevelCacheStore.getCacheStoreConfig()).thenReturn(
-                mockConfig);
-        final LowLevelCacheEntry ispnEntry =
-                new CacheStoreEntry(mockLowLevelCacheStore, "foo", testKey);
-        final byte[] bytes = new byte[] {0, 1, 2, 3, 4};
-        ispnEntry.storeValue(new ByteArrayInputStream(bytes));
-        verify(mockLowLevelCacheStore).store(any(InternalCacheEntry.class));
-    }
-
-    @Test
-    public void testGetExternalIdentifier() throws Exception {
-        when(mockStore.toString()).thenReturn("i-am-a-mock-store");
-        testObj.setExternalId("zyx");
-        assertEquals("zyx/i-am-a-mock-store", testObj.getExternalIdentifier());
-    }
-
-    @Test
-    public void testFileSystemExternalIdentifier() throws Exception {
-        when(fsbs.getDirectory()).thenReturn(new File("/tmp/xyz"));
-        final LowLevelCacheEntry filesystemTestObj =
-                new LocalBinaryStoreEntry(fsbs, testKey);
-
-        filesystemTestObj.setExternalId("zyx");
-        final String identifier = filesystemTestObj.getExternalIdentifier();
-        assertTrue(identifier.startsWith("zyx/org.modeshape.jcr.value.binary"
-                + ".FileSystemBinaryStore"));
-        // some test junk in the middle
-        assertTrue(identifier.endsWith(File.separator + "tmp" + File.separator +
-                "xyz"));
-    }
-
-    @Test
     public void testGetFixity() throws RepositoryException, NoSuchAlgorithmException {
-        final LowLevelCacheEntry ispnEntry =
-                new LocalBinaryStoreEntry(mockStore, testKey);
+        final CacheEntry ispnEntry =
+                new LocalBinaryStoreEntry(mockStore, mockProperty);
         final byte[] bytes = new byte[] {0, 1, 2, 3, 4};
         when(mockStore.getInputStream(testKey)).thenAnswer(
                 new Answer<InputStream>() {
@@ -205,25 +151,25 @@ public class LowLevelCacheEntryTest {
         final byte[] digested = d.digest(bytes);
         URI testCS = ContentDigest.asURI("SHA-1", digested);
         LOGGER.debug(testCS.toString());
-        FixityResult actual = ispnEntry.checkFixity(testCS, bytes.length);
+        FixityResult actual = ispnEntry.checkFixity(testCS, bytes.length).iterator().next();
         assertEquals(1, actual.getStatus().size());
         assertEquals(actual.getStatus().iterator().next().toString(), true,
                 actual.getStatus().contains(SUCCESS));
 
         // report the wrong size
-        actual = ispnEntry.checkFixity(testCS, bytes.length + 1);
+        actual = ispnEntry.checkFixity(testCS, bytes.length + 1).iterator().next();
         assertEquals(1, actual.getStatus().size());
         assertEquals(actual.getStatus().iterator().next().toString(), true,
                 actual.getStatus().contains(BAD_SIZE));
         // break the digest
         digested[0] += 9;
         testCS = ContentDigest.asURI("SHA-1", digested);
-        actual = ispnEntry.checkFixity(testCS, bytes.length);
+        actual = ispnEntry.checkFixity(testCS, bytes.length).iterator().next();
         assertEquals(1, actual.getStatus().size());
         assertEquals(actual.getStatus().iterator().next().toString(), true,
                 actual.getStatus().contains(BAD_CHECKSUM));
         // report the wrong size and the wrong digest
-        actual = ispnEntry.checkFixity(testCS, bytes.length + 1);
+        actual = ispnEntry.checkFixity(testCS, bytes.length + 1).iterator().next();
         assertEquals(2, actual.getStatus().size());
         assertEquals(true, actual.getStatus().contains(BAD_CHECKSUM));
         assertEquals(true, actual.getStatus().contains(BAD_SIZE));

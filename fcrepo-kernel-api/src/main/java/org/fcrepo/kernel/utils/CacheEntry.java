@@ -18,6 +18,7 @@ package org.fcrepo.kernel.utils;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Collection;
 
 import javax.jcr.RepositoryException;
 
@@ -35,7 +36,7 @@ public interface CacheEntry {
      * @return a {@link FixityResult} containing the relevant data
      * @throws RepositoryException
      */
-    FixityResult checkFixity(URI checksum, long size)
+    Collection<FixityResult> checkFixity(URI checksum, long size)
         throws RepositoryException;
 
     /**
@@ -51,5 +52,5 @@ public interface CacheEntry {
      * @return
      * @throws RepositoryException
      */
-    abstract String getExternalIdentifier();
+    abstract String getExternalIdentifier() throws RepositoryException;
 }
