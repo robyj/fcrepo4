@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2014 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import org.modeshape.jcr.value.BinaryKey;
  * @author cabeer
  */
 public class InfinispanUtils {
+    private InfinispanUtils() {
+    }
 
     /**
      * Get the data key for the given binary key

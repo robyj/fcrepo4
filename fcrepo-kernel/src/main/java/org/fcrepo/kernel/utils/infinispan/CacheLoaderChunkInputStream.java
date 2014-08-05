@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 DuraSpace, Inc.
+ * Copyright 2014 DuraSpace, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,18 +45,18 @@ public class CacheLoaderChunkInputStream extends InputStream {
      * @param chunkSize
      * @param totalSize
      */
-    public CacheLoaderChunkInputStream( CacheLoader<String, byte[]> blobCache,
-                             String key,
-                             int chunkSize,
-                             long totalSize ) {
+    public CacheLoaderChunkInputStream( final CacheLoader<String, byte[]> blobCache,
+                                        final String key,
+                                        final int chunkSize,
+                                        final long totalSize ) {
         this.blobCache = blobCache;
         this.key = key;
         this.chunkSize = chunkSize;
         this.totalSize = totalSize;
         this.chunkNumber = 0;
         this.indexInBuffer = 0;
-        int remainderSize = (int) (totalSize % chunkSize);
-        int numberOfChunks = (int) totalSize / chunkSize;
+        final int remainderSize = (int) (totalSize % chunkSize);
+        final int numberOfChunks = (int) totalSize / chunkSize;
         this.chunksCount = remainderSize > 0 ? numberOfChunks + 1 : numberOfChunks;
     }
 
@@ -76,9 +76,9 @@ public class CacheLoaderChunkInputStream extends InputStream {
     }
 
     @Override
-    public int read( byte[] b,
-                     int off,
-                     int len ) throws IOException {
+    public int read( final byte[] b,
+                     final int off,
+                     final int len ) throws IOException {
         if (indexInBuffer == -1) {
             return -1;
         }
@@ -89,15 +89,18 @@ public class CacheLoaderChunkInputStream extends InputStream {
         if (indexInBuffer >= buffer.length) {
             return -1;
         }
+        final int newlen;
         if (indexInBuffer + len > buffer.length) {
-            len = buffer.length - indexInBuffer;
+            newlen = buffer.length - indexInBuffer;
+        } else {
+            newlen = len;
         }
-        System.arraycopy(buffer, indexInBuffer, b, off, len);
-        indexInBuffer += len;
+        System.arraycopy(buffer, indexInBuffer, b, off, newlen);
+        indexInBuffer += newlen;
         if (indexInBuffer >= buffer.length) {
             fillBufferWithNextChunk();
         }
-        return len;
+        return newlen;
     }
 
     @Override
@@ -109,7 +112,7 @@ public class CacheLoaderChunkInputStream extends InputStream {
     }
 
     @Override
-    public final long skip( long n ) {
+    public final long skip( final long n ) {
         if (n <= 0 || indexInBuffer == -1 || totalSize == 0) {
             return 0;
         }
@@ -121,8 +124,8 @@ public class CacheLoaderChunkInputStream extends InputStream {
         endOfStream();
     }
 
-    private long directSkip( long n ) {
-        long availableInBuffer = buffer != null ? (buffer.length - indexInBuffer) : chunkSize;
+    private long directSkip( final long n ) {
+        final long availableInBuffer = buffer != null ? (buffer.length - indexInBuffer) : chunkSize;
 
         if (n < availableInBuffer) {
             //we can skip "n" without requiring any additional chunks
@@ -135,13 +138,13 @@ public class CacheLoaderChunkInputStream extends InputStream {
         }
 
         //we need to skip past the current chunk, so find the chunk which needs to be loaded
-        long lastChunkSize = totalSize - (chunksCount - 1) * chunkSize;
-        int chunksAvailableToSkip = chunksCount - chunkNumber - 1;
-        long bytesAvailableToSkip = (chunksAvailableToSkip - 1) * chunkSize + lastChunkSize;
+        final long lastChunkSize = totalSize - (chunksCount - 1) * chunkSize;
+        final int chunksAvailableToSkip = chunksCount - chunkNumber - 1;
+        final long bytesAvailableToSkip = (chunksAvailableToSkip - 1) * chunkSize + lastChunkSize;
 
-        long stillRequiredToSkip = n - availableInBuffer;
-        int chunksToSkipOver = (int) (stillRequiredToSkip / chunkSize);
-        int leftToReadAfterSkip = (int) (stillRequiredToSkip % chunkSize);
+        final long stillRequiredToSkip = n - availableInBuffer;
+        final int chunksToSkipOver = (int) (stillRequiredToSkip / chunkSize);
+        final int leftToReadAfterSkip = (int) (stillRequiredToSkip % chunkSize);
         chunkNumber = chunkNumber + chunksToSkipOver + 1;   //chunk# is 0 based
 
         if (chunkNumber >= chunksCount) {
@@ -170,7 +173,7 @@ public class CacheLoaderChunkInputStream extends InputStream {
         fillBuffer(0);
     }
 
-    private void fillBuffer(int chunkNumber) {
+    private void fillBuffer(final int chunkNumber) {
         buffer = readChunk(chunkNumber);
         if (buffer == null) {
             endOfStream();
@@ -185,8 +188,8 @@ public class CacheLoaderChunkInputStream extends InputStream {
         chunkNumber = -1;
     }
 
-    private byte[] readChunk( int chunkNumber ) {
-        String chunkKey = key + "-" + chunkNumber;
+    private byte[] readChunk( final int chunkNumber ) {
+        final String chunkKey = key + "-" + chunkNumber;
         LOGGER.debug("Read chunk {0}", chunkKey);
         if (blobCache.contains(chunkKey)) {
             return blobCache.load(chunkKey).getValue();
