@@ -78,6 +78,7 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -89,6 +90,7 @@ import com.google.common.collect.ImmutableMap;
  *
  * @author cbeer
  */
+@Ignore
 public class FedoraBatchTest {
 
     FedoraBatch testObj;
