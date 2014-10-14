@@ -27,13 +27,12 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Resource;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFLanguages;
-import org.fcrepo.http.commons.api.rdf.UriAwareIdentifierConverter;
 import org.fcrepo.kernel.RdfLexicon;
 import org.fcrepo.kernel.identifiers.IdentifierConverter;
-import org.fcrepo.transform.http.responses.ResultSetStreamingOutput;
 import org.fcrepo.transform.sparql.JQLResultSet;
 import org.fcrepo.transform.sparql.SparqlServiceDescription;
 import org.junit.Before;
@@ -190,23 +189,15 @@ public class FedoraSparqlTest {
         when(mockRequest.selectVariant(POSSIBLE_SPARQL_RDF_VARIANTS)).thenReturn(mockVariant);
         when(mockVariant.getMediaType()).thenReturn(MediaType.valueOf(contentTypeTextTSV));
         final InputStream input = new ByteArrayInputStream(testSparql.getBytes());
-        final Response response = testObj.runSparqlQuery(input, mockRequest, uriInfo);
-        assertTrue(response.getStatus() == OK.getStatusCode());
-        assertEquals(ok(new ResultSetStreamingOutput(new JQLResultSet(mockSession,
-                new UriAwareIdentifierConverter(mockSession, uriInfo.getBaseUriBuilder()),
-                mockResults), mockVariant.getMediaType())).build().toString(),
-                response.toString());
+        final ResultSet resultSet = testObj.runSparqlQuery(input, mockRequest, uriInfo);
+        assertEquals(mockResults, ((JQLResultSet) resultSet).getQueryResult());
     }
 
     @Test
     public void testRunSparqlQueryWithHTMLForm() throws RepositoryException {
         when(mockRequest.selectVariant(POSSIBLE_SPARQL_RDF_VARIANTS)).thenReturn(mockVariant);
         when(mockVariant.getMediaType()).thenReturn(MediaType.valueOf(contentTypeTextTSV));
-        final Response response = testObj.runSparqlQuery(testSparql, mockRequest, uriInfo);
-        assertTrue(response.getStatus() == OK.getStatusCode());
-        assertEquals(ok(new ResultSetStreamingOutput(new JQLResultSet(mockSession,
-                new UriAwareIdentifierConverter(mockSession, uriInfo.getBaseUriBuilder()),
-                mockResults), mockVariant.getMediaType())).build().toString(),
-                response.toString());
+        final ResultSet resultSet = testObj.runSparqlQuery(testSparql, mockRequest, uriInfo);
+        assertEquals(mockResults, ((JQLResultSet) resultSet).getQueryResult());
     }
 }

@@ -29,7 +29,6 @@ import org.fcrepo.http.api.FedoraBaseResource;
 import org.fcrepo.http.commons.responses.ViewHelpers;
 import org.fcrepo.kernel.identifiers.IdentifierConverter;
 import org.fcrepo.kernel.impl.rdf.impl.NamespaceRdfContext;
-import org.fcrepo.transform.http.responses.ResultSetStreamingOutput;
 import org.fcrepo.transform.sparql.JQLConverter;
 import org.fcrepo.transform.sparql.SparqlServiceDescription;
 import org.slf4j.Logger;
@@ -39,6 +38,7 @@ import javax.inject.Inject;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -64,8 +64,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.ok;
-import static javax.ws.rs.core.Response.status;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.apache.jena.riot.WebContent.contentTypeN3;
 import static org.apache.jena.riot.WebContent.contentTypeNTriples;
 import static org.apache.jena.riot.WebContent.contentTypeRDFXML;
@@ -199,7 +197,7 @@ public class FedoraSparql extends FedoraBaseResource {
             contentTypeTextPlain, contentTypeResultsJSON,
             contentTypeResultsXML, contentTypeResultsBIO, contentTypeTurtle,
             contentTypeN3, contentTypeNTriples, contentTypeRDFXML})
-    public Response runSparqlQuery(final InputStream requestBodyStream,
+    public ResultSet runSparqlQuery(final InputStream requestBodyStream,
         @Context final Request request, @Context final UriInfo uriInfo)
         throws IOException, RepositoryException {
 
@@ -225,16 +223,14 @@ public class FedoraSparql extends FedoraBaseResource {
             contentTypeTextPlain, contentTypeResultsJSON,
             contentTypeResultsXML, contentTypeResultsBIO, contentTypeTurtle,
             contentTypeN3, contentTypeNTriples, contentTypeRDFXML})
-    public Response runSparqlQuery(@FormParam("query") final String query,
+    public ResultSet runSparqlQuery(@FormParam("query") final String query,
                                    @Context final Request request,
                                    @Context final UriInfo uriInfo)
             throws RepositoryException {
 
         LOGGER.trace("POST SPARQL query with {}: {}", contentTypeHTMLForm, query);
         if (Strings.isNullOrEmpty(query)) {
-            return status(BAD_REQUEST)
-                    .entity("SPARQL must not be null. Please submit a query with parameter 'query'.")
-                    .build();
+            throw new BadRequestException("SPARQL must not be null. Please submit a query with parameter 'query'.");
         }
         return rexecSparql(query,
                            request.selectVariant(POSSIBLE_SPARQL_RDF_VARIANTS),
@@ -246,7 +242,7 @@ public class FedoraSparql extends FedoraBaseResource {
         return session;
     }
 
-    private Response rexecSparql(final String sparql,
+    private ResultSet rexecSparql(final String sparql,
                                  final Variant bestPossibleResponse,
                                  final IdentifierConverter<Resource,Node> graphSubjects)
             throws RepositoryException {
@@ -256,11 +252,6 @@ public class FedoraSparql extends FedoraBaseResource {
 
         LOGGER.trace("Converted to JQL query: {}", jqlConverter.getStatement());
 
-        final ResultSet resultSet = jqlConverter.execute();
-
-        final ResultSetStreamingOutput streamingOutput =
-            new ResultSetStreamingOutput(resultSet, bestPossibleResponse.getMediaType());
-
-        return ok(streamingOutput).build();
+        return jqlConverter.execute();
     }
 }
